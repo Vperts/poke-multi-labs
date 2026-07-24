@@ -439,6 +439,10 @@
   }
 
   let ultimoSt = null   // o dropdown precisa do estado pra mostrar a contagem por qualidade
+  // ANTI-FLICKER: assinatura do conteudo ESTAVEL do card (sem as barras nem o timer da hunt).
+  // tick() so reescreve o innerHTML quando ISTO muda -> para de reinserir sprites e recriar as
+  // barras a cada 1s (era a piscada). Barras = dono tickHP (150ms); timer = update cirurgico.
+  let lastSig = null
   async function tick (){
     if(document.hidden) return
     // com o seletor aberto NAO redesenha: o innerHTML novo fecharia o painel na cara do dono
@@ -452,11 +456,12 @@
     ultimoSt = st
     const a=alertOf(st)
     if(!st||st.ok===false){
-      document.getElementById('app').innerHTML='<div class="card"><div class="h">'+
+      const off='<div class="card"><div class="h">'+
         '<div class="who"><div class="n"><span class="nick">'+esc(nameOf(NUM))+'</span></div></div>'+
         '<span class="b '+a.badge+'">'+a.txt+'</span></div>'+
         '<div class="off">sem dados ainda</div>'+rodape+'</div>'
-      liga(); return
+      if(off!==lastSig){ document.getElementById('app').innerHTML=off; liga(); lastSig=off }
+      return
     }
     const lid = st.lider || null
     const dex = lid && lid.speciesId
@@ -498,7 +503,8 @@
       ? '<div class="sub">'+(lid.shiny?'<span class="sh">✨ </span>':'')+esc(lid.name)+
         (nivelPoke?' <span class="lv">nv '+fmt(nivelPoke)+'</span>':'')+'</div>'
       : ''
-    document.getElementById('app').innerHTML='<div class="card">'+
+    const barsHtml=barrasHeroi(st)
+    const html='<div class="card">'+
       '<div class="h">'+
         '<span class="av">'+(dex?'<img src="'+(doJogo||gif)+'" '+
           'onerror="this.onerror=function(){this.onerror=null;this.src=\''+png+'\'};this.src=\''+gif+'\'" alt="">':'')+'</span>'+
@@ -509,7 +515,7 @@
           '<span class="ico" id="zerar" title="Zerar as estatísticas desta conta (o mesmo que o jogo faz ao trocar de hunt)">🗑</span>'+
         '</div>'+
       '</div>'+
-      barrasHeroi(st)+
+      barsHtml+
       '<div class="rows">'+
       linhaBolas(st, bola)+
       linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':'')+
@@ -521,6 +527,15 @@
       '</div>'+
       ultimaCap(st)+
       rodape+'</div>'
+    // ANTI-FLICKER: so reescreve o DOM se o conteudo ESTAVEL mudou. As barras (barsHtml, dono do
+    // tickHP) e o timer da hunt sao volateis -> ficam FORA da assinatura. Quando so eles mudam, o
+    // card fica intacto (sprites nao reinserem, barras nao recriam) e o timer e' atualizado a mao.
+    let sig=html
+    if(barsHtml) sig=sig.replace(barsHtml,'§b§')
+    sig=sig.replace(/(<span class="tempo"[^>]*>)[^<]*/,'$1')
+    if(sig===lastSig){ const tEl=document.querySelector('.tempo'); if(tEl&&tHunt) tEl.textContent=tHunt; return }
+    lastSig=sig
+    document.getElementById('app').innerHTML=html
     liga()
   }
 

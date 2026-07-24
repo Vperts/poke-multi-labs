@@ -7,7 +7,7 @@ directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.7.0
+  version: 0.8.0
 files:
   - main-lite.js
   - lite-titlebar-preload.js
@@ -31,7 +31,18 @@ files:
   - renderer/sprites/**/*
   - node_modules/ws/**/*
 win:
-  target: portable
+  target: nsis
   signAndEditExecutable: false
-portable:
-  artifactName: VpertsMultiLeve-${version}-portable.exe
+nsis:
+  oneClick: true                        # duplo-clique instala e ja abre, sem telas
+  perMachine: false                     # instala pro usuario (sem prompt de admin)
+  allowToChangeInstallationDirectory: false
+  artifactName: VpertsMultiLeve-Setup-${version}.exe
+# publish = canal do AUTO-UPDATE. Gera o latest.yml e embute o app-update.yml (owner/repo) que o
+# electron-updater le pra achar versao nova. Release NORMAL (nao prerelease) pra o /releases/latest
+# do GitHub retornar ela — e' de la que o updater default le o latest.yml.
+publish:
+  provider: github
+  owner: ekooll
+  repo: poke-multi-labs
+  releaseType: release

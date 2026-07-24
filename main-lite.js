@@ -408,6 +408,19 @@ ipcMain.on('set-sidebar', (_e, collapsed) => { sideW = collapsed ? SIDE_RAIL : S
 ipcMain.handle('relaunch', (_e, n) => { n = Math.max(1, Math.min(MAX, n | 0)); while (slots.length > n) closeSlot(slots.length - 1); while (slots.length < n) openAccount(nextFreeNum()); layout(); emitState(); });
 ipcMain.handle('add-account', () => { if (slots.length < MAX) { openAccount(nextFreeNum()); layout(); emitState(); } });
 ipcMain.handle('close-account', (_e, i) => { closeSlot(i); layout(); emitState(); });
+// TROCAR CONTA: desloga a conta DAQUELA janela (Google + jogo) pra entrar em outra. So apagar o
+// token nao basta — o cookie do accounts.google.com fica preso na particao persistente e o
+// "Continuar com Google" re-seleciona a mesma conta. Entao: apaga o token salvo + LIMPA a particao
+// inteira (clearStorageData zera cookies/localStorage/sessionStorage) + recarrega no /login, onde
+// o Google volta a mostrar o seletor de contas. Isolado por conta (cada uma tem particao propria).
+ipcMain.handle('trocar-conta', async (_e, i) => {
+  const s = slots[i]; if (!s) return { ok: false };
+  delete sessions[s.num]; saveSessions();
+  try { await session.fromPartition('persist:vperts-conta' + s.num).clearStorageData(); } catch (e) {}
+  try { await s.view.webContents.loadURL(LOGIN); } catch (e) {}
+  emitState();
+  return { ok: true };
+});
 ipcMain.handle('open-dashboard', () => { openDashboard(); return true; });
 
 // ---- dashboard (reaproveitado) ----
@@ -483,8 +496,37 @@ ipcMain.handle('login', () => ({ ok: true }));
 ipcMain.handle('signup', () => ({ ok: true }));
 ipcMain.handle('read-loot', () => null);
 ipcMain.handle('open-loot', () => true);
-ipcMain.handle('check-update', () => ({ ok: true, hasUpdate: false, current: 'lite', packaged: false }));
-ipcMain.handle('apply-update', () => ({ ok: false }));
+// ---- AUTO-UPDATE (electron-updater) — canal `latest` do release publico ekooll/poke-multi-labs
+// (publish config no electron-builder-lite.yml gera o app-update.yml embutido). So funciona no app
+// EMPACOTADO NSIS; em dev retorna packaged:false. O botao "Atualizar" da sidebar chama check-update
+// (compara versao) e, se tiver nova, apply-update (baixa o instalador e reinicia instalando).
+const { autoUpdater } = require('electron-updater');
+autoUpdater.autoDownload = false;            // so baixa quando o dono clicar (nao no boot)
+autoUpdater.autoInstallOnAppQuit = false;
+autoUpdater.on('error', (e) => console.error('[update]', e && e.message));
+function cmpVer (a, b) {
+  const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; }
+  return 0;
+}
+ipcMain.handle('check-update', async () => {
+  const cur = app.getVersion();
+  if (!app.isPackaged) return { ok: true, current: cur, latest: cur, hasUpdate: false, packaged: false };
+  try {
+    const r = await autoUpdater.checkForUpdates();
+    const latest = (r && r.updateInfo && r.updateInfo.version) || cur;
+    return { ok: true, current: cur, latest, hasUpdate: cmpVer(latest, cur) > 0, packaged: true };
+  } catch (e) { return { ok: false, error: e && e.message }; }
+});
+ipcMain.handle('apply-update', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'dev' };
+  try {
+    await autoUpdater.downloadUpdate();
+    setImmediate(() => { try { autoUpdater.quitAndInstall(); } catch (e) {} });
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e && e.message }; }
+});
 ipcMain.handle('get-profile', () => null);
 ipcMain.handle('save-profile', () => ({ ok: true }));
 ipcMain.handle('check-admin', () => false);

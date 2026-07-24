@@ -235,13 +235,17 @@
       row.innerHTML = '<span class="dot' + (sl.embedded ? ' up' : '') + '"></span>' +
         '<button class="aname" title="Clique: focar · Duplo-clique ou ✎: renomear"></button>' +
         '<button class="ax" title="Renomear (seu personagem)">✎</button>' +
+        '<button class="ax" title="Trocar de conta (sai do Google nesta janela e volta pro login)">⇄</button>' +
         '<button class="ax" title="Fechar">✕</button>'
       const an = row.querySelector('.aname')
       an.textContent = nm
       wireFocusEdit(an, sl, () => startEdit(row, sl))
       const axs = row.querySelectorAll('.ax')
       axs[0].onclick = (e) => { e.stopPropagation(); startEdit(row, sl) }
-      axs[1].onclick = () => window.ml.closeAccount(sl.i)
+      axs[1].onclick = (e) => { e.stopPropagation()
+        if (confirm('Trocar de conta nesta janela?\n\nVai deslogar o Google/jogo desta tela e voltar pro login pra você entrar com outra conta. As outras contas não são afetadas.'))
+          window.ml.trocarConta(sl.i) }
+      axs[2].onclick = () => window.ml.closeAccount(sl.i)
       box.appendChild(row)
     })
     // + Conta (respeita o limite da licenca)
