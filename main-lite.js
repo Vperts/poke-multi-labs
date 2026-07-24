@@ -70,9 +70,16 @@ function attachShortcuts (wc) {
   wc.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown' || !(input.control || input.meta)) return;
     const k = input.key;
-    if (k >= '1' && k <= String(MAX)) { const i = +k - 1; if (slots[i]) { solo = i; layout(); emitState(); event.preventDefault(); } }
-    else if (k === '0' || k === 'g' || k === 'G') { solo = -1; layout(); emitState(); event.preventDefault(); }
+    if (k >= '1' && k <= String(MAX)) { const i = +k - 1; if (slots[i]) { solo = i; layout(); focaConta(slots[i]); emitState(); event.preventDefault(); } }
+    else if (k === '0' || k === 'g' || k === 'G') { solo = -1; layout(); focaConta(slots.find(s => s.num === focusNum) || slots[0]); emitState(); event.preventDefault(); }
   });
+}
+// DEVOLVE o foco de teclado a conta mostrada. Sem isso a view troca mas fica INATIVA: o atalho
+// dispara de qualquer view (game/overlay/sidebar/titlebar), entao o foco segue na anterior (agora
+// escondida) e o jogo novo so responde depois de um clique -> era o "atalho travando". O
+// wc.on('focus') do slot atualiza focusNum sozinho quando o foco assenta.
+function focaConta (s) {
+  try { if (s && s.view && !s.view.webContents.isDestroyed()) s.view.webContents.focus(); } catch (e) {}
 }
 
 // ---- FPS overlay: contador verde no canto sup. direito de cada conta ----
