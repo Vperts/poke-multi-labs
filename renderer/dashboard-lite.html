@@ -159,6 +159,15 @@
   .track{height:10px;border-radius:6px;background:#170d0b;border:1px solid var(--line);overflow:hidden}
   .fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3ae07c,#1fb959);transition:width .4s var(--ease)}
   .fill.mid{background:linear-gradient(90deg,var(--mid),var(--gold-soft))}
+  /* progressão da profissão: grade de abates por tipo (have/need) */
+  .tkg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px 12px;margin-top:9px}
+  .tkc{min-width:0}
+  .tkh{display:flex;justify-content:space-between;gap:6px;font-size:9.5px;color:var(--muted);margin-bottom:3px}
+  .tkh b{color:var(--cream);font-weight:700;font-variant-numeric:tabular-nums}
+  .tkb{height:4px;border-radius:3px;background:#170d0b;border:1px solid var(--line);overflow:hidden}
+  .tkf{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold))}
+  .tkc.done .tkf{background:linear-gradient(90deg,#3ae07c,#1fb959)}
+  .tkc.done .tkh{color:var(--faint)}
   .fill.low{background:linear-gradient(90deg,var(--red-2),var(--red))}
   .sec{border-top:1px dashed var(--line);padding-top:11px}
   .sech{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);
@@ -340,14 +349,18 @@
       if(P.pokedexCount!=null) pt+=tile('t-good','📕','Pokédex',fmt(P.pokedexCount)+'/'+fmt(P.pokedexTotal||0),P.totalCatches!=null?(fmt(P.totalCatches)+' capturas'):'')
       const prof=AP.professions
       if(prof&&prof.catchBonusPct!=null) pt+=tile('t-good','🎯','Bônus captura','+'+prof.catchBonusPct+'%',prof.rankName?esc(prof.rankName):'')
-      let xpbar=''
+      let bars=''
       if(P.xpForNext){ const xpp=Math.max(0,Math.min(100,(P.xpInLevel||0)/P.xpForNext*100))
-        xpbar='<div class="prog"><div class="ph"><span class="pt">XP do nível '+fmt(P.level)+'</span>'+
+        bars+='<div class="prog" style="margin-top:10px"><div class="ph"><span class="pt">XP do nível '+fmt(P.level)+'</span>'+
           '<span class="pv">'+fmt(P.xpInLevel||0)+' / '+fmt(P.xpForNext)+' ('+xpp.toFixed(0)+'%)</span></div>'+
           '<div class="track"><div class="fill" style="width:'+xpp.toFixed(0)+'%"></div></div></div>' }
+      if(P.pokedexCount!=null&&P.pokedexTotal){ const dp=Math.max(0,Math.min(100,P.pokedexCount/P.pokedexTotal*100))
+        bars+='<div class="prog" style="margin-top:8px"><div class="ph"><span class="pt">Pokédex</span>'+
+          '<span class="pv">'+fmt(P.pokedexCount)+' / '+fmt(P.pokedexTotal)+' ('+dp.toFixed(0)+'%) · faltam '+fmt(Math.max(0,P.pokedexTotal-P.pokedexCount))+'</span></div>'+
+          '<div class="track"><div class="fill mid" style="width:'+dp.toFixed(0)+'%"></div></div></div>' }
       h+='<section class="box"><div class="bh"><span class="bt">Treinador</span>'+
         (P.vip?'<span class="bv est">VIP</span>':'')+(P.clan&&P.clan.name?'<span class="bv">clã '+esc(P.clan.name)+'</span>':'')+
-        '</div><div class="tiles">'+pt+'</div>'+xpbar+'</section>'
+        '</div><div class="tiles">'+pt+'</div>'+bars+'</section>'
     }
 
     // ===== STREAK POINTS — /api/game/streak (saido do card pro dashboard). available = saldo
@@ -375,6 +388,36 @@
           '<div class="track"><div class="fill" style="width:'+pct.toFixed(0)+'%"></div></div></div>'+
         (ks?'<div class="sec"><div class="sech">Abates por espécie <em>top '+Math.min(8,(S.kills||[]).length)+'</em></div>'+ks+'</div>':'')+
         '</section>'
+    }
+
+    // ===== TREINADOR DE PRESTÍGIO — /api/game/professions. Rank atual + progressão pro próximo
+    // (espécies, fotos e abates POR TIPO have/need), igual a seção de profissão do launcher do Fleck. =====
+    const PR = AP.professions
+    if(PR && PR.rankName){
+      const ns=PR.nextStep
+      const barLin=(lbl,have,need)=>{ const p=need?Math.max(0,Math.min(100,have/need*100)):100
+        return '<div class="prog" style="margin-top:8px"><div class="ph"><span class="pt">'+lbl+'</span>'+
+          '<span class="pv">'+fmt(have)+' / '+fmt(need)+(p>=100?' ✓':'')+'</span></div>'+
+          '<div class="track"><div class="fill'+(p>=100?'':' mid')+'" style="width:'+p.toFixed(0)+'%"></div></div></div>' }
+      let pbody=''
+      if(ns && !ns.ok){
+        if(ns.species) pbody+=barLin('Espécies pro rank '+esc(ns.toRankName||''),ns.species.have,ns.species.need)
+        if(ns.pictures&&ns.pictures.need) pbody+=barLin('Fotos de shiny',ns.pictures.have,ns.pictures.need)
+        if(Array.isArray(ns.kills)&&ns.kills.length){
+          const TP={NORMAL:'Normal',FIRE:'Fogo',WATER:'Água',GRASS:'Planta',ELECTRIC:'Elétrico',ICE:'Gelo',FIGHTING:'Lutador',POISON:'Veneno',GROUND:'Terra',FLYING:'Voador',PSYCHIC:'Psíquico',BUG:'Inseto',ROCK:'Pedra',GHOST:'Fantasma',DRAGON:'Dragão',DARK:'Sombrio',STEEL:'Aço',FAIRY:'Fada'}
+          const faltam=ns.kills.filter(k=>(k.have||0)<(k.need||0)).length
+          pbody+='<div class="sec"><div class="sech">Abates por tipo <em>'+(faltam?faltam+' tipo(s) faltando':'todos completos ✓')+'</em></div><div class="tkg">'+
+            ns.kills.map(k=>{ const p=k.need?Math.max(0,Math.min(100,k.have/k.need*100)):100, done=p>=100
+              return '<div class="tkc'+(done?' done':'')+'"><div class="tkh"><span>'+(TP[k.type]||esc(k.type))+'</span><b>'+fmt(k.have)+'/'+fmt(k.need)+'</b></div>'+
+                '<div class="tkb"><div class="tkf" style="width:'+p.toFixed(0)+'%"></div></div></div>' }).join('')+'</div></div>'
+        }
+      } else {
+        pbody='<div class="na" style="padding:6px 0">pronto pra evoluir de rank ✓</div>'
+      }
+      h+='<section class="box"><div class="bh"><span class="bt">Treinador de Prestígio</span>'+
+        '<span class="bv">'+esc(PR.rankName)+(PR.rankKey?' ('+esc(PR.rankKey)+')':'')+(PR.maxRank?' · rank '+fmt(PR.rank)+'/'+fmt(PR.maxRank):'')+'</span></div>'+
+        (PR.catchBonusPct!=null?'<div class="ph2"><span>bônus de captura ativo</span><b>+'+PR.catchBonusPct+'%</b></div>':'')+
+        pbody+'</section>'
     }
 
     // TUDO daqui pra baixo sai do dado vivo do WS (st.live) e das taxas calculadas pelo

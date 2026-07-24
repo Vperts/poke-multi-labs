@@ -22,29 +22,29 @@
     grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:11vmin 12vmin;padding:2.4vmin}
   .q{position:relative;min-width:0;min-height:0}
   /* o canto virado pro centro ganha folga: a Pokebola encosta ali e nao pode tapar numero */
-  .q1 .card{padding-right:5.5vmin;padding-bottom:3.4vmin}
-  .q2 .card{padding-left:5.5vmin;padding-bottom:3.4vmin}
-  .q3 .card{padding-right:5.5vmin;padding-top:3.4vmin}
-  .q4 .card{padding-left:5.5vmin;padding-top:3.4vmin}
+  .q1 .card{padding-right:4.8vmin;padding-bottom:2.2vmin}
+  .q2 .card{padding-left:4.8vmin;padding-bottom:2.2vmin}
+  .q3 .card{padding-right:4.8vmin;padding-top:2.2vmin}
+  .q4 .card{padding-left:4.8vmin;padding-top:2.2vmin}
 
   .card{position:relative;height:100%;display:flex;flex-direction:column;
-    border:1.5px solid var(--c);border-radius:2.2vmin;padding:2.2vmin 2.6vmin;
+    border:1.5px solid var(--c);border-radius:2.2vmin;padding:1.8vmin 2.2vmin;
     background:linear-gradient(160deg,var(--card),var(--card2));
     box-shadow:0 0 3.4vmin color-mix(in srgb,var(--c) 26%,transparent),
       inset 0 0 3vmin color-mix(in srgb,var(--c) 6%,transparent)}
   /* cabeçalho: ícone redondo + título grande na cor + subtítulo */
-  .ch{display:flex;align-items:center;gap:1.6vmin;padding-bottom:1.6vmin;
+  .ch{display:flex;align-items:center;gap:1.3vmin;padding-bottom:1vmin;
     border-bottom:1px solid rgba(255,255,255,.07)}
-  .cico{width:5.4vmin;height:5.4vmin;flex:none;border-radius:50%;display:grid;place-items:center;
+  .cico{width:4.5vmin;height:4.5vmin;flex:none;border-radius:50%;display:grid;place-items:center;
     border:2px solid var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);
     box-shadow:0 0 1.8vmin color-mix(in srgb,var(--c) 35%,transparent)}
-  .cico img{width:3.4vmin;height:3.4vmin;object-fit:contain;image-rendering:pixelated}
-  .cico span{font-size:2.6vmin;line-height:1;color:var(--c);font-weight:800}
+  .cico img{width:2.8vmin;height:2.8vmin;object-fit:contain;image-rendering:pixelated}
+  .cico span{font-size:2.1vmin;line-height:1;color:var(--c);font-weight:800}
   .cht{min-width:0;flex:1}
-  .ct{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:3.1vmin;color:var(--c);
+  .ct{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:2.55vmin;color:var(--c);
     letter-spacing:.04em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     text-shadow:0 0 1.6vmin color-mix(in srgb,var(--c) 45%,transparent)}
-  .cs{font-size:1.5vmin;color:var(--muted);margin-top:.4vmin;
+  .cs{font-size:1.3vmin;color:var(--muted);margin-top:.35vmin;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .cb{flex:none;font-size:1.35vmin;font-weight:800;padding:.5em 1.1em;border-radius:99px;
     text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
@@ -52,26 +52,30 @@
 
   /* linhas: ícone + rótulo + valor na cor */
   .rows{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
-  .r{display:flex;align-items:center;gap:1.5vmin;padding:.85vmin 0}
+  .r{display:flex;align-items:center;gap:1.3vmin;padding:.42vmin 0}
   .r+.r{border-top:1px solid rgba(255,255,255,.05)}
-  .ri{width:3.2vmin;height:3.2vmin;flex:none;display:grid;place-items:center}
+  /* ÍCONE DE LINHA PADRONIZADO — mesma regra do card (ver docs/UI_ICONES.md): a CAIXA manda, todo
+     ícone (sprite OU emoji) enche a MESMA caixa. overflow:hidden pra o zoom da bola recortar;
+     emoji com font-size ≈ caixa; sprite de bola (muito padding transparente) leva .z e é ampliado. */
+  .ri{width:2.7vmin;height:2.7vmin;flex:none;display:grid;place-items:center;overflow:hidden}
   .ri img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
-  .ri span{font-size:2.2vmin;line-height:1;color:var(--c)}
-  .rl{flex:1;min-width:0;font-size:1.85vmin;color:var(--cream);font-weight:600;
+  .ri span{font-size:2.6vmin;line-height:1;color:var(--c)}
+  .r.ball .ri img.z{width:200%;height:200%;max-width:none;margin:-50%}
+  .rl{flex:1;min-width:0;font-size:1.6vmin;color:var(--cream);font-weight:600;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rv{font-family:'Cinzel',serif;font-weight:800;font-size:2.5vmin;color:var(--c);
+  .rv{font-family:'Cinzel',serif;font-weight:800;font-size:2.15vmin;color:var(--c);
     font-variant-numeric:tabular-nums;white-space:nowrap}
   .r.zero .rv{color:var(--bad)}
-  .rv .sep{color:var(--faint);font-weight:600;margin:0 .5vmin}
-  /* 2 barras no rodape (HP + EXP): a de EXP com rotulo proprio */
-  .bar+.bar{margin-top:.9vmin}
+  .rv .sep{color:var(--faint);font-weight:600;margin:0 .45vmin}
 
-  /* barra do rodapé do card */
-  .bar{margin-top:1.6vmin}
-  .track{height:1.1vmin;border-radius:1vmin;background:rgba(255,255,255,.07);overflow:hidden}
+  /* barras do rodapé (HP + EXP lado a lado pra caber sem sobrepor as linhas) */
+  .bars{display:flex;gap:1.4vmin;margin-top:1vmin}
+  .bar2{flex:1;min-width:0}
+  .track{height:1vmin;border-radius:1vmin;background:rgba(255,255,255,.07);overflow:hidden}
   .fill{height:100%;border-radius:1vmin;background:var(--c);
     box-shadow:0 0 1.4vmin color-mix(in srgb,var(--c) 60%,transparent);transition:width .5s ease}
-  .cap{margin-top:.8vmin;font-size:1.4vmin;color:var(--faint)}
+  .cap{margin-top:.5vmin;font-size:1.2vmin;color:var(--faint);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* perna: sai do canto interno do card e aponta pro centro */
   .leg{position:absolute;width:5.2vmin;height:5.2vmin;pointer-events:none;border-color:var(--c);opacity:.85}
@@ -120,7 +124,9 @@
   const DEX = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/'
   const url = (s)=> !s ? null : (/^(https?:|data:)/.test(s) ? s : (s.charAt(0)==='/' ? GAME+s : GAME+'/assets/items/'+s))
   const ehImg = (s)=> !!s && (/^(https?:|data:)/.test(s) || s.indexOf('/')>=0)
-  const ico = (s)=> ehImg(s) ? '<img src="'+esc(url(s))+'" alt="">' : '<span>'+(s||'')+'</span>'
+  // ZOOM: sprite desenhado pequeno num canvas grande (ex.: bola, muito padding) recebe .z e é
+  // ampliado+recortado pela caixa, batendo o tamanho visual com os demais. Igual ao card.
+  const ico = (s)=> ehImg(s) ? '<img src="'+esc(url(s))+'" onload="if(this.naturalWidth>=24)this.classList.add(\'z\')" alt="">' : '<span>'+(s||'')+'</span>'
   const POKE = GAME+'/assets/markitems/pokeball.png'
   const BACK = { potion: GAME+'/assets/markitems/ultra_potion.png', revive: GAME+'/assets/markitems/revive.png' }
   const namesMap = ()=>{ try{ return JSON.parse(localStorage.getItem('pml_names')||'{}') }catch{ return {} } }
@@ -189,7 +195,7 @@
         '<div class="cs">'+(sub.length?esc(sub.join(' · ')):'aguardando dados')+'</div></span>'+
         '<span class="cb '+a.badge+'">'+a.txt+'</span></div>'+
       '<div class="rows">'+
-        linha(bola,bolaLbl,fmt(bolaQtd), bolaQtd===0?'zero':(bolaQtd<lowBall()?'warn':''))+
+        linha(bola,bolaLbl,fmt(bolaQtd), 'ball'+(bolaQtd===0?' zero':(bolaQtd<lowBall()?' warn':'')))+
         linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':'')+
         linha(rev,'Revive',st.revives!=null?fmt(st.revives):'—', st.revives===0?'zero':'')+
         linha('⚔','Derrotados', L.kills!=null?par(L.kills,capsSessao(st).length):'—')+
@@ -197,10 +203,12 @@
         linha('★','Lendários',fmt(lendarios(st)))+
         linha('$','Profit',saldo!=null?curto(saldo):'—')+
       '</div>'+
-      (hpPct!=null?'<div class="bar"><div class="track"><div class="fill" style="width:'+hpPct.toFixed(0)+'%"></div></div>'+
-        '<div class="cap">HP · '+fmt(hp)+' / '+fmt(hpMax)+'</div></div>':'')+
-      (xpPct!=null?'<div class="bar"><div class="track"><div class="fill" style="width:'+xpPct.toFixed(0)+'%"></div></div>'+
-        '<div class="cap">EXP'+(lvl!=null?' nv '+fmt(lvl):'')+' · '+xpPct.toFixed(0)+'%</div></div>':'')+
+      ((hpPct!=null||xpPct!=null)?'<div class="bars">'+
+        (hpPct!=null?'<div class="bar2"><div class="track"><div class="fill" style="width:'+hpPct.toFixed(0)+'%"></div></div>'+
+          '<div class="cap">HP · '+fmt(hp)+' / '+fmt(hpMax)+'</div></div>':'')+
+        (xpPct!=null?'<div class="bar2"><div class="track"><div class="fill" style="width:'+xpPct.toFixed(0)+'%"></div></div>'+
+          '<div class="cap">EXP'+(lvl!=null?' nv '+fmt(lvl):'')+' · '+xpPct.toFixed(0)+'%</div></div>':'')+
+        '</div>':'')+
       '</div><span class="leg"></span>'
   }
 
