@@ -62,6 +62,9 @@
   .rv{font-family:'Cinzel',serif;font-weight:800;font-size:2.5vmin;color:var(--c);
     font-variant-numeric:tabular-nums;white-space:nowrap}
   .r.zero .rv{color:var(--bad)}
+  .rv .sep{color:var(--faint);font-weight:600;margin:0 .5vmin}
+  /* 2 barras no rodape (HP + EXP): a de EXP com rotulo proprio */
+  .bar+.bar{margin-top:.9vmin}
 
   /* barra do rodapé do card */
   .bar{margin-top:1.6vmin}
@@ -150,6 +153,8 @@
   }
   const linha = (src,lbl,val,cls)=>'<div class="r '+(cls||'')+'"><span class="ri">'+ico(src)+'</span>'+
     '<span class="rl">'+lbl+'</span><span class="rv">'+val+'</span></div>'
+  // "a / b" (Derrotados = kills/capturas · Shiny = achados/capturados), igual o card
+  const par = (a,b)=> fmt(a)+'<span class="sep">/</span>'+fmt(b)
 
   function cardConta (r, i){
     const st=r.state, a=alertOf(st), cor=CORES[i%4]
@@ -169,9 +174,13 @@
     const bolaQtd=ativa?(ativa.qty||0):(st.ballsTotal||0)
     const pot=spriteDe(st.cura,'heal')||BACK.potion, rev=spriteDe(st.cura,'revive')||BACK.revive
     const saldo=st.fin&&st.fin.saldo
-    // barra = HP do time (o WS dá o do líder)
-    const hp=(lid&&lid.hp!=null)?lid.hp:st.hp, hpMax=(lid&&lid.maxHp)||st.hpMax
-    const pct=(hp!=null&&hpMax)?Math.max(0,Math.min(100,hp/hpMax*100)):null
+    const L=st.live||{}
+    // barras HP + EXP do líder: st.hero = tempo real (HP do field) + curva cúbica do card;
+    // cai no líder do roster se não vier. Mesma fonte que o card usa nas barras.
+    const H=st.hero||{}, lid2=lid||{}
+    const hp=(H.hp!=null)?H.hp:(lid2.hp!=null?lid2.hp:st.hp), hpMax=(H.maxHp!=null&&H.maxHp>0)?H.maxHp:(lid2.maxHp||st.hpMax)
+    const hpPct=(H.hpPct!=null)?H.hpPct:((hp!=null&&hpMax)?Math.max(0,Math.min(100,hp/hpMax*100)):null)
+    const xpPct=(H.xpPct!=null)?H.xpPct:null, lvl=(H.level!=null)?H.level:lid2.level
     const sub=[]; if(lid&&lid.name)sub.push((lid.shiny?'★ ':'')+lid.name+(lid.level?' nv '+lid.level:''))
     if(st.zone)sub.push(st.zone)
     return '<div class="card" style="--c:'+cor+'">'+
@@ -183,11 +192,15 @@
         linha(bola,bolaLbl,fmt(bolaQtd), bolaQtd===0?'zero':(bolaQtd<lowBall()?'warn':''))+
         linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':'')+
         linha(rev,'Revive',st.revives!=null?fmt(st.revives):'—', st.revives===0?'zero':'')+
+        linha('⚔','Derrotados', L.kills!=null?par(L.kills,capsSessao(st).length):'—')+
+        linha('✨','Shiny', par(L.shinies||0,L.shiniesCaught||0))+
         linha('★','Lendários',fmt(lendarios(st)))+
         linha('$','Profit',saldo!=null?curto(saldo):'—')+
       '</div>'+
-      (pct!=null?'<div class="bar"><div class="track"><div class="fill" style="width:'+pct.toFixed(0)+'%"></div></div>'+
-        '<div class="cap">HP do time · '+fmt(hp)+' / '+fmt(hpMax)+'</div></div>':'')+
+      (hpPct!=null?'<div class="bar"><div class="track"><div class="fill" style="width:'+hpPct.toFixed(0)+'%"></div></div>'+
+        '<div class="cap">HP · '+fmt(hp)+' / '+fmt(hpMax)+'</div></div>':'')+
+      (xpPct!=null?'<div class="bar"><div class="track"><div class="fill" style="width:'+xpPct.toFixed(0)+'%"></div></div>'+
+        '<div class="cap">EXP'+(lvl!=null?' nv '+fmt(lvl):'')+' · '+xpPct.toFixed(0)+'%</div></div>':'')+
       '</div><span class="leg"></span>'
   }
 

@@ -325,6 +325,58 @@
   function painelConta (st){
     if(!st || st.ok===false) return '<div class="na">jogo não respondeu (logou?)</div>'
     let h=''
+
+    // ===== TREINADOR — fonte AUTORITATIVA /api/game/profile (level/gold/rank/pokédex do TREINADOR,
+    // que o WS nao manda e o DOM nao le — so o canvas). XP do nivel vem pronto (xpInLevel/xpForNext),
+    // sem chute de curva. Ver memory streak-points-endpoint-api. =====
+    const AP = st.api || {}
+    const P = AP.profile
+    if(P){
+      let pt=''
+      pt+=tile('t-xp','XP','Nível',fmt(P.level), (P.xpForNext!=null)?('falta '+curto(Math.max(0,(P.xpForNext||0)-(P.xpInLevel||0)))+' XP'):'')
+      pt+=tile('t-gold','$','Gold',curto(P.gold),fmt(P.gold))
+      if(P.diamonds!=null) pt+=tile('t-good','◆','Diamantes',fmt(P.diamonds),'')
+      if(P.rank!=null) pt+=tile('t-good','#','Rank global','#'+fmt(P.rank),P.totalPlayers?('de '+curto(P.totalPlayers)):'')
+      if(P.pokedexCount!=null) pt+=tile('t-good','📕','Pokédex',fmt(P.pokedexCount)+'/'+fmt(P.pokedexTotal||0),P.totalCatches!=null?(fmt(P.totalCatches)+' capturas'):'')
+      const prof=AP.professions
+      if(prof&&prof.catchBonusPct!=null) pt+=tile('t-good','🎯','Bônus captura','+'+prof.catchBonusPct+'%',prof.rankName?esc(prof.rankName):'')
+      let xpbar=''
+      if(P.xpForNext){ const xpp=Math.max(0,Math.min(100,(P.xpInLevel||0)/P.xpForNext*100))
+        xpbar='<div class="prog"><div class="ph"><span class="pt">XP do nível '+fmt(P.level)+'</span>'+
+          '<span class="pv">'+fmt(P.xpInLevel||0)+' / '+fmt(P.xpForNext)+' ('+xpp.toFixed(0)+'%)</span></div>'+
+          '<div class="track"><div class="fill" style="width:'+xpp.toFixed(0)+'%"></div></div></div>' }
+      h+='<section class="box"><div class="bh"><span class="bt">Treinador</span>'+
+        (P.vip?'<span class="bv est">VIP</span>':'')+(P.clan&&P.clan.name?'<span class="bv">clã '+esc(P.clan.name)+'</span>':'')+
+        '</div><div class="tiles">'+pt+'</div>'+xpbar+'</section>'
+    }
+
+    // ===== STREAK POINTS — /api/game/streak (saido do card pro dashboard). available = saldo
+    // gastavel (o que o jogo destaca); earned = total ganho na vida; 1 pt / killsPerPoint kills. =====
+    const S = AP.streak
+    if(S && S.earned!=null){
+      const per=S.killsPerPoint||1000, toNext=(S.toNext!=null)?S.toNext:per, prog=Math.max(0,per-toNext)
+      const pct=Math.max(0,Math.min(100,prog/per*100)), saldo=(S.available!=null)?S.available:S.earned, prox=(S.earned||0)+1
+      const B=S.bonusPct||{}
+      let ks=''
+      if(Array.isArray(S.kills)&&S.kills.length){
+        ks='<div class="drops">'+S.kills.slice(0,8).map(k=>'<div class="drop"><span class="dn">'+
+          (k.speciesId?'<img src="'+spritePng(k.speciesId)+'" onerror="this.style.display=\'none\'" alt="">':'')+esc(k.name)+'</span>'+
+          '<span class="dq">×'+fmt(k.kills)+'</span></div>').join('')+'</div>'
+      }
+      h+='<section class="box"><div class="bh"><span class="bt">🔥 Streak Points</span>'+
+        '<span class="bv">'+fmt(S.totalKills)+' abates de vida</span></div>'+
+        '<div class="stats">'+
+          stat(fmt(saldo),'disponíveis',(S.spent?fmt(S.spent)+' usados':'saldo'))+
+          stat(fmt(S.earned),'ganhos','1 pt / '+fmt(per)+' kills')+
+          stat('+'+(B.exp||0)+' / +'+(B.loot||0)+' / +'+(B.shiny||0)+'%','exp/loot/shiny','+0,1% por ponto')+
+        '</div>'+
+        '<div class="prog"><div class="ph"><span class="pt">próximo ponto (o '+prox+'º)</span>'+
+          '<span class="pv">'+fmt(prog)+' / '+fmt(per)+' · faltam '+fmt(toNext)+'</span></div>'+
+          '<div class="track"><div class="fill" style="width:'+pct.toFixed(0)+'%"></div></div></div>'+
+        (ks?'<div class="sec"><div class="sech">Abates por espécie <em>top '+Math.min(8,(S.kills||[]).length)+'</em></div>'+ks+'</div>':'')+
+        '</section>'
+    }
+
     // TUDO daqui pra baixo sai do dado vivo do WS (st.live) e das taxas calculadas pelo
     // leitor (st.taxa). O analyzer do jogo (st.an) nao manda mais em nada: ele so chega
     // enquanto o painel Hunt Analyzer estiver aberto no jogo e congelava a tela inteira.

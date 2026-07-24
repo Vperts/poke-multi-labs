@@ -167,12 +167,6 @@
   /* XP sem a curva aprendida ainda: listrado faint (nao finge 0% nem 100%) */
   .hbar.aprendendo .hfill.xp{width:100%!important;opacity:.2;
     background:repeating-linear-gradient(45deg,#c99a2e 0 6px,transparent 6px 12px)}
-  /* ---- Streak Points: barra fina dourada (fonte AUTORITATIVA /api/game/streak) ---- */
-  .hbar.sk{height:13px;border-radius:6px;margin-top:3px}
-  .hbar.sk .hin{font-size:9.5px}
-  .hfill.sk{background:linear-gradient(90deg,#c9962e,#f2c94c)}
-  .r .v .pts{font-size:9px;font-weight:600;color:var(--faint);margin-left:2px}
-  .ult.sksub{margin-top:3px}
 
   /* ---- grip: arrastar o card (igual ao modal do dashboard) ---- */
   .grip{position:relative;z-index:3;height:14px;flex:none;display:grid;place-items:center;
@@ -444,27 +438,6 @@
     return out + '</div>'
   }
 
-  // ---- STREAK POINTS (linha compacta) — fonte AUTORITATIVA do jogo: /api/game/streak (via bridge).
-  // 1 ponto a cada killsPerPoint abates; `earned` nunca reseta (total de VIDA, nao da sessao).
-  // prog = abates ja feitos dentro do ponto atual (per - toNext). Degrada pra nada se sem dado.
-  function linhaStreak (st){
-    const s = st && st.streak
-    if (!s || s.earned == null) return ''
-    const per = s.killsPerPoint || 1000
-    const toNext = (s.toNext != null) ? s.toNext : per
-    const prog = Math.max(0, per - toNext)
-    const pct = Math.max(0, Math.min(100, (prog / per) * 100))
-    const proximo = (s.earned || 0) + 1
-    const saldoPts = (s.available != null) ? s.available : s.earned   // saldo GASTAVEL (o jogo destaca este)
-    return '<div class="r" title="Streak Points disponíveis (saldo) — total de vida da conta, fonte: jogo">'+
-        '<span class="i"><span>🔥</span></span><span class="l">Streak</span>'+
-        '<span class="v">'+fmt(saldoPts)+'<span class="pts">pts</span></span></div>'+
-      '<div class="hbar sk" title="progresso pro próximo ponto (1 a cada '+fmt(per)+' abates)">'+
-        '<div class="hfill sk" style="width:'+pct.toFixed(1)+'%"></div>'+
-        '<span class="hin">'+fmt(prog)+' / '+fmt(per)+'</span></div>'+
-      '<div class="ult sksub">→ faltam '+fmt(toNext)+' pro '+proximo+'º</div>'
-  }
-
   let ultimoSt = null   // o dropdown precisa do estado pra mostrar a contagem por qualidade
   async function tick (){
     if(document.hidden) return
@@ -545,7 +518,6 @@
       linha('✨','Shiny',par(shinyApp,shinyCap))+
       linha(lendSprite(st)||'✨',rotuloTier(),fmt(lendarios(st)),'','poke')+
       linha('$','Profit',saldo!=null?'<span class="v '+(saldo<0?'neg':'pos')+'">'+(saldo<0?'':'+')+money(saldo)+'</span>':'—')+
-      linhaStreak(st)+
       '</div>'+
       ultimaCap(st)+
       rodape+'</div>'

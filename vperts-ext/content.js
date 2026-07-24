@@ -150,10 +150,9 @@
     ballCounts: null, ballCatalog: null,   // catalogo traz nome+icone -> fim do mapa chutado
     lastCatch: null, bestCatch: null, catches: [], rareDrops: [], loot: {},
     offline: false,
-    // STREAK POINTS: resumo de /api/game/streak (fonte AUTORITATIVA do jogo). O WS nao manda o
-    // total de vida; o jogo so busca ao abrir o painel. Aqui a gente busca sozinho (boot + 45s).
-    // Guarda so o resumo — a linha do card e compacta; a lista de abates por especie fica fora do V.
-    streak: null,
+    // API REST do jogo (fonte AUTORITATIVA): { profile, streak, professions, ts }. O WS nao manda
+    // total de vida/level do treinador; puxado de /api/game/* com Bearer (ver puxaApi la embaixo).
+    api: null,
   };
   // estado interno (fora do V pra nao ir parar no localStorage a cada save)
   const P = { ids: Object.create(null), shinyOnField: false, lastBall: null, huntKey: null,
@@ -731,30 +730,45 @@
   ['CONNECTING','OPEN','CLOSING','CLOSED'].forEach(k => window.WebSocket[k] = Orig[k]);
   flush();
 
-  // ---- STREAK POINTS: puxa /api/game/streak (mesma origem -> cookie da sessao automatico).
-  // O jogo so busca ao ABRIR o painel; a gente busca no boot e a cada 45s pro card ficar vivo.
-  // available/earned so mudam a cada 1.000 abates; toNext desce ~7/min a 400 kills/h -> 45s sobra.
-  const puxaStreak = () => {
-    try {
-      // auth do jogo NAO e cookie: e Bearer <accessToken> (JWT em sessionStorage['pokeweb:tokens']).
-      // Sem o header da 401 "Nao autenticado". Sem token (deslogado) -> nem tenta.
-      var tk = null;
-      try { tk = (JSON.parse(sessionStorage.getItem('pokeweb:tokens') || '{}') || {}).accessToken; } catch (e) {}
-      if (!tk) return;
-      fetch('/api/game/streak', { headers: { Authorization: 'Bearer ' + tk } })
-        .then(r => (r && r.ok) ? r.json() : null)
-        .then(d => {
-          if (!d || typeof d.totalKills !== 'number') return;
-          V.streak = {
-            totalKills: d.totalKills, killsPerPoint: d.killsPerPoint || 1000,
-            earned: d.earned, available: d.available, spent: d.spent, toNext: d.toNext,
-            bonusPct: d.bonusPct || null, ts: Date.now()
-          };
-          flush();
-        })
-        .catch(() => {});
-    } catch (e) {}
+  // ---- API REST do jogo (fonte AUTORITATIVA): profile + streak + professions em V.api.
+  // Auth = Bearer <accessToken> de sessionStorage['pokeweb:tokens'] (NAO cookie -> senao 401).
+  // O jogo so busca esses endpoints ao ABRIR o painel; a gente busca no boot + a cada 45s pro
+  // dashboard/stats ficarem vivos. Catalogo completo na memory streak-points-endpoint-api.
+  // (available/earned so mudam a cada 1.000 kills; profile muda por kill mas 45s sobra pro painel.)
+  const tokenDoJogo = () => { try { return (JSON.parse(sessionStorage.getItem('pokeweb:tokens') || '{}') || {}).accessToken || null; } catch (e) { return null; } };
+  const getApi = (tk, path) => fetch(path, { headers: { Authorization: 'Bearer ' + tk } })
+    .then(r => (r && r.ok) ? r.json() : null).catch(() => null);
+  const puxaApi = () => {
+    const tk = tokenDoJogo();
+    if (!tk) return;   // deslogado -> nem tenta (o jogo refaz o token sozinho no sessionStorage)
+    Promise.all([
+      getApi(tk, '/api/game/profile'),
+      getApi(tk, '/api/game/streak'),
+      getApi(tk, '/api/game/professions')
+    ]).then(function (res) {
+      const profile = res[0], streak = res[1], prof = res[2];
+      const api = V.api || {};
+      if (profile && typeof profile.level === 'number') api.profile = {
+        name: profile.name, level: profile.level, xp: profile.xp, gold: profile.gold, diamonds: profile.diamonds,
+        xpInLevel: profile.xpInLevel, xpForNext: profile.xpForNext, rank: profile.rank, totalPlayers: profile.totalPlayers,
+        totalCatches: profile.totalCatches, pokedexCount: profile.pokedexCount, pokedexTotal: profile.pokedexTotal,
+        vip: !!profile.vip, clan: profile.clan || null
+      };
+      if (streak && typeof streak.totalKills === 'number') api.streak = {
+        totalKills: streak.totalKills, killsPerPoint: streak.killsPerPoint || 1000,
+        earned: streak.earned, available: streak.available, spent: streak.spent, toNext: streak.toNext,
+        bonusPct: streak.bonusPct || null,
+        kills: Array.isArray(streak.kills) ? streak.kills.slice(0, 12) : null   // top especies (dashboard)
+      };
+      if (prof) api.professions = {
+        rankName: prof.rankName, rankKey: prof.rankKey, rank: prof.rank, maxRank: prof.maxRank,
+        catchBonusPct: prof.catchBonusPct, speciesCount: prof.speciesCount, nextStep: prof.nextStep || null
+      };
+      api.ts = Date.now();
+      V.api = api;
+      flush();
+    });
   };
-  puxaStreak();
-  setInterval(puxaStreak, 45000);
+  puxaApi();
+  setInterval(puxaApi, 45000);
 })();
