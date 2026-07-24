@@ -7,7 +7,7 @@ directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.8.0
+  version: 0.8.1
 files:
   - main-lite.js
   - lite-titlebar-preload.js
@@ -29,7 +29,27 @@ files:
   - renderer/fonts/**/*
   # sprites shiny extraidos do proprio jogo (ver renderer/sprites/LEIA.md)
   - renderer/sprites/**/*
+  # runtime deps do app: ws (cdp) + electron-updater e TODA a sua arvore. O electron-builder NAO
+  # incluia builder-util-runtime/fs-extra/semver sozinho (sao deps compartilhadas com o proprio
+  # electron-builder devDep, ele cortava como "dev") -> require('electron-updater') estourava no
+  # boot e o app TRAVAVA sem abrir o jogo. Listar explicitamente forca a inclusao. (v0.8.0 quebrou.)
   - node_modules/ws/**/*
+  - node_modules/electron-updater/**/*
+  - node_modules/builder-util-runtime/**/*
+  - node_modules/fs-extra/**/*
+  - node_modules/graceful-fs/**/*
+  - node_modules/jsonfile/**/*
+  - node_modules/universalify/**/*
+  - node_modules/js-yaml/**/*
+  - node_modules/argparse/**/*
+  - node_modules/semver/**/*
+  - node_modules/lazy-val/**/*
+  - node_modules/lodash.escaperegexp/**/*
+  - node_modules/lodash.isequal/**/*
+  - node_modules/tiny-typed-emitter/**/*
+  - node_modules/debug/**/*
+  - node_modules/ms/**/*
+  - node_modules/sax/**/*
 win:
   target: nsis
   icon: renderer/logo-vp.ico            # icone do app/exe + dos atalhos (logo Vperts, 256x256)

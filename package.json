@@ -13,7 +13,12 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "builder-util-runtime": "9.2.10",
     "electron-updater": "^6.8.9",
+    "fs-extra": "8.1.0",
+    "jsonfile": "4.0.0",
+    "semver": "6.3.1",
+    "universalify": "0.1.2",
     "ws": "^8.21.1"
   },
   "devDependencies": {
