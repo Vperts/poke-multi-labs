@@ -32,11 +32,14 @@ files:
   - node_modules/ws/**/*
 win:
   target: nsis
+  icon: renderer/logo-vp.ico            # icone do app/exe + dos atalhos (logo Vperts, 256x256)
   signAndEditExecutable: false
 nsis:
   oneClick: true                        # duplo-clique instala e ja abre, sem telas
   perMachine: false                     # instala pro usuario (sem prompt de admin)
   allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true           # atalho na Area de Trabalho, com o icone
+  createStartMenuShortcut: true         # e no Menu Iniciar
   artifactName: VpertsMultiLeve-Setup-${version}.exe
 # publish = canal do AUTO-UPDATE. Gera o latest.yml e embute o app-update.yml (owner/repo) que o
 # electron-updater le pra achar versao nova. Release NORMAL (nao prerelease) pra o /releases/latest
