@@ -111,7 +111,7 @@ function _stateFn () {
           lider: w.lider, huntMob: w.huntMob,   // huntMob = pokemon da hunt (icone do card)
           ballCounts: w.ballCounts, ballCatalog: w.ballCatalog, msgs: w.msgs, startTs: w.startTs,
           lastMsgTs: w.lastMsgTs, lastKillTs: w.lastKillTs, lastFieldTs: w.lastFieldTs,
-          hunt: w.hunt, an: w.an, tot: w.tot, offline: w.offline }
+          hunt: w.hunt, an: w.an, tot: w.tot, streak: w.streak, offline: w.offline }
       }
     } catch (e) {}
 
@@ -364,7 +364,7 @@ function _stateFn () {
       fin, huntSec, taxa, drops: dropsF,
       // time da conta pelo WS: nome/nivel/HP do lider vem certo (o DOM so via o canvas)
       lider: live ? live.lider : null,
-      photos: live ? live.photos : null, live, an: anF }
+      photos: live ? live.photos : null, streak: live ? live.streak : null, live, an: anF }
   } catch (e) { return { ok: false, err: String((e && e.message) || e) } }
 }
 const STATE_EXPR = '(' + _stateFn.toString() + ')()'
