@@ -66,6 +66,7 @@
   .rv{font-family:'Cinzel',serif;font-weight:800;font-size:2.15vmin;color:var(--c);
     font-variant-numeric:tabular-nums;white-space:nowrap}
   .r.zero .rv{color:var(--bad)}
+  .r.baixo .rv{color:var(--bad)}   /* abaixo do limite de alerta -> valor VERMELHO */
   .rv .sep{color:var(--faint);font-weight:600;margin:0 .45vmin}
 
   /* barras do rodapé (HP + EXP lado a lado pra caber sem sobrepor as linhas) */
@@ -131,7 +132,12 @@
   const BACK = { potion: GAME+'/assets/markitems/ultra_potion.png', revive: GAME+'/assets/markitems/revive.png' }
   const namesMap = ()=>{ try{ return JSON.parse(localStorage.getItem('pml_names')||'{}') }catch{ return {} } }
   const nameOf = (n)=>namesMap()[n]||('Conta '+n)
-  const lowBall = ()=>parseInt(localStorage.getItem('pml_lowball')||'500')||500
+  // limites do alerta vem do MAIN (mesma config da aba Alertas), fetch a cada 4s; fallback localStorage
+  let _alcfg=null
+  function fetchAlertCfg(){ try{ if(window.ml&&window.ml.alertConfigGet) window.ml.alertConfigGet().then(c=>{ if(c)_alcfg=c }) }catch(e){} }
+  fetchAlertCfg(); setInterval(fetchAlertCfg,4000)
+  const lowBall = ()=> (_alcfg&&_alcfg.lowBall!=null)?_alcfg.lowBall:(parseInt(localStorage.getItem('pml_lowball')||'500')||500)
+  const lowPotion = ()=> (_alcfg&&_alcfg.lowPotion!=null)?_alcfg.lowPotion:(parseInt(localStorage.getItem('pml_lowpotion')||'50')||50)
   const LEND = 1.7   // "Lendário" = qualidade >= 1,7 (tier Lendária do jogo)
   // SO as capturas DESTA sessao (ts >= sessTs), igual o card e o dashboard — senao "Lendários"
   // conta a vida inteira e nao zera na troca de hunt/lixeira.
@@ -195,8 +201,8 @@
         '<div class="cs">'+(sub.length?esc(sub.join(' · ')):'aguardando dados')+'</div></span>'+
         '<span class="cb '+a.badge+'">'+a.txt+'</span></div>'+
       '<div class="rows">'+
-        linha(bola,bolaLbl,fmt(bolaQtd), 'ball'+(bolaQtd===0?' zero':(bolaQtd<lowBall()?' warn':'')))+
-        linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':'')+
+        linha(bola,bolaLbl,fmt(bolaQtd), 'ball'+(bolaQtd===0?' zero':(bolaQtd<lowBall()?' baixo':'')))+
+        linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':(st.potions<lowPotion()?'baixo':''))+
         linha(rev,'Revive',st.revives!=null?fmt(st.revives):'—', st.revives===0?'zero':'')+
         linha('⚔','Derrotados', L.kills!=null?par(L.kills,capsSessao(st).length):'—')+
         linha('✨','Shiny', par(L.shinies||0,L.shiniesCaught||0))+
