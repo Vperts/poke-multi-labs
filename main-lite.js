@@ -305,6 +305,36 @@ function syncStats () {
     'window.__vpActive=' + statsMode + ';window.__vpActive&&window.__refresh&&window.__refresh()').catch(() => {});
 }
 
+// ---- BANNER de alerta CENTRALIZADO (sobre a area do jogo, grande, no meio da tela) ----
+// View transparente que so aparece quando um alerta dispara e some sozinha em ~7s. Fica por cima.
+let bannerView = null, bannerTimer = null;
+const BANNER_OFF = { x: -20000, y: -20000, width: 10, height: 10 };
+function posBanner () {
+  if (!bannerView || !win) return;
+  const { width: W, height: H } = win.getContentBounds();
+  const topY = B + TITLE_H, areaH = Math.max(0, H - 2 * B - TITLE_H);
+  const gx = B + sideW, gw = Math.max(0, W - B - gx);
+  const bw = Math.min(600, Math.max(300, Math.round(gw * 0.6))), bh = 160;
+  bannerView.setBounds({ x: Math.round(gx + (gw - bw) / 2), y: Math.round(topY + (areaH - bh) / 2), width: bw, height: bh });
+}
+function ensureBanner () {
+  if (bannerView) return bannerView;
+  bannerView = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'host-preload.js'), contextIsolation: true, transparent: true } });
+  try { bannerView.setBackgroundColor('#00000000'); } catch (e) {}
+  bannerView.webContents.loadFile(path.join(__dirname, 'renderer', 'alerta.html'));
+  win.contentView.addChildView(bannerView);          // adicionado por ultimo = fica por cima
+  try { bannerView.setBounds(BANNER_OFF); } catch (e) {}   // nasce escondida
+  return bannerView;
+}
+function mostraBanner (texto) {
+  if (!win) return;
+  ensureBanner(); posBanner();
+  try { win.contentView.addChildView(bannerView); } catch (e) {}   // reforca o topo (caso stats/overlay tenham entrado depois)
+  try { bannerView.webContents.send('alerta-visual', { texto }); } catch (e) {}
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => { try { bannerView.setBounds(BANNER_OFF); } catch (e) {} }, 7000);
+}
+
 function openDashboard () {
   if (dash && !dash.isDestroyed()) { if (dash.isMinimized()) dash.restore(); dash.show(); dash.focus(); return; }
   dash = new BrowserWindow({
@@ -480,8 +510,10 @@ ipcMain.on('alert-names', (_e, n) => { alertNames = (n && typeof n === 'object')
 const alertState = {};   // `${num}:${tipo}` -> { baixo, ultimoAviso } (borda + repeticao)
 function disparaAlerta (texto, sound, num, tipo) {
   try { if (Notification.isSupported()) new Notification({ title: 'Vperts Multi — alerta', body: texto }).show(); } catch (e) {}
-  // manda tudo pra sidebar: toca o som E marca a conta visualmente (flash + aviso)
+  // manda pra sidebar: toca o som E pisca a linha da conta
   try { if (sidebar && !sidebar.webContents.isDestroyed()) sidebar.webContents.send('alert-sound', { sound, num, tipo, texto }); } catch (e) {}
+  // banner GRANDE no meio da tela (sobre a area do jogo)
+  try { mostraBanner(texto); } catch (e) {}
 }
 function avaliaAlerta (num, tipo, baixo, texto, sound, agora, repeatMs) {
   const k = num + ':' + tipo, prev = alertState[k] || { baixo: false, ultimoAviso: 0 };

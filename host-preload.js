@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('ml', {
   alertConfigSet: (cfg) => ipcRenderer.invoke('alert-config-set', cfg),
   setAlertNames: (names) => ipcRenderer.send('alert-names', names),
   onAlertSound: (cb) => ipcRenderer.on('alert-sound', (_e, d) => cb(d)),
+  onAlerta: (cb) => ipcRenderer.on('alerta-visual', (_e, d) => cb(d)),
   getProfile: () => ipcRenderer.invoke('get-profile'),
   saveProfile: (nome, discord, nick) => ipcRenderer.invoke('save-profile', nome, discord, nick),
   checkAdmin: () => ipcRenderer.invoke('check-admin'),

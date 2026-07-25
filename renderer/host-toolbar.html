@@ -444,18 +444,14 @@
     } catch (e) {}
   }
   window.playBeep = playBeep
-  // ALERTA VISUAL: pisca a linha da conta na sidebar + mostra um aviso (toast) dizendo qual conta.
-  let _toastT = null
+  // ALERTA VISUAL: pisca a LINHA da conta na sidebar (indica qual conta). O banner GRANDE
+  // centralizado (sobre o jogo) vive na view alerta.html, controlada pelo main.
   function flashConta (d) {
     try {
       if (d && d.num != null) {
         const row = document.querySelector('.arow[data-num="' + d.num + '"]')
         if (row) { row.classList.add('alerta'); setTimeout(() => row.classList.remove('alerta'), 7000) }
       }
-      let tt = document.getElementById('alerttoast')
-      if (!tt) { tt = document.createElement('div'); tt.id = 'alerttoast'; document.body.appendChild(tt) }
-      tt.textContent = '⚠ ' + ((d && d.texto) || 'estoque acabando')
-      tt.classList.add('show'); clearTimeout(_toastT); _toastT = setTimeout(() => tt.classList.remove('show'), 7000)
     } catch (e) {}
   }
   if (window.ml.onAlertSound) window.ml.onAlertSound(function (d) { playBeep(d && d.sound); flashConta(d) })

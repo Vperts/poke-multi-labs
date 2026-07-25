@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="./fonts/fonts.css">
+<style>
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden;
+    font-family:Inter,system-ui,sans-serif;-webkit-user-select:none}
+  #wrap{height:100%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:6px}
+  .card{width:100%;height:100%;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:10px;padding:14px 22px;border:2.5px solid #e2483a;border-radius:20px;
+    background:linear-gradient(180deg,rgba(58,23,18,.97),rgba(28,11,8,.97));
+    box-shadow:0 16px 55px rgba(0,0,0,.6),0 0 46px rgba(226,72,58,.4);
+    animation:pop .28s cubic-bezier(.2,1.3,.4,1), flash 1s ease-in-out .28s infinite}
+  @keyframes pop{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes flash{0%,100%{border-color:#e2483a;box-shadow:0 16px 55px rgba(0,0,0,.6),0 0 30px rgba(226,72,58,.3)}
+    50%{border-color:#ff9686;box-shadow:0 16px 55px rgba(0,0,0,.6),0 0 60px rgba(226,72,58,.7)}}
+  .ic{font-size:42px;line-height:1}
+  .tt{font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#ff9686}
+  .tx{font-size:24px;font-weight:800;color:#ffe4de;text-align:center;line-height:1.25;
+    overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+</style>
+</head>
+<body>
+  <div id="wrap"><div class="card">
+    <div class="ic">⚠️</div>
+    <div class="tt">Estoque acabando</div>
+    <div class="tx" id="tx">—</div>
+  </div></div>
+<script>
+  // re-dispara a animacao a cada alerta novo (mesmo se a view ja estava visivel)
+  function mostra (texto) {
+    var tx = document.getElementById('tx'); tx.textContent = texto || 'estoque acabando'
+    var card = document.querySelector('.card')
+    card.style.animation = 'none'; void card.offsetWidth
+    card.style.animation = 'pop .28s cubic-bezier(.2,1.3,.4,1), flash 1s ease-in-out .28s infinite'
+  }
+  if (window.ml && window.ml.onAlerta) window.ml.onAlerta(function (d) { mostra(d && d.texto) })
+</script>
+</body>
+</html>

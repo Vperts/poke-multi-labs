@@ -20,6 +20,7 @@ files:
   - renderer/dashboard-lite.html
   - renderer/stats-grid.html
   - renderer/overlay.html
+  - renderer/alerta.html
   - renderer/curtain.html
   - renderer/logo-vp.png
   - renderer/logo-vp.ico
