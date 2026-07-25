@@ -42,8 +42,12 @@ const PORTAS = [
 // Tipos conhecidos = os documentados na skill PORYGON. Qualquer coisa fora daqui é NOVIDADE e
 // vira alerta. Ao promover um tipo novo pra documentado, acrescentar nesta lista.
 const CONHECIDOS = new Set([
+  // do schema público (AntonioFleck, 18/07/2026)
   'field', 'chat', 'analyzer', 'balls', 'field-kill', 'poke-xp', 'catch-result', 'inventory',
   'events', 'pokes', 'poke-delta', 'field-init', 'shiny-global', 'session-replaced',
+  // achados do proprio Xatu no censo de 25/07/2026 (documentados na skill porygon). Entram aqui
+  // pra ele parar de alertar o mesmo — o alerta serve pra NOVIDADE, nao pra repetir o sabido.
+  'auto-heal', 'announce', 'boosts', 'joy-healed', 'pending', 'history', 'mail-badge',
 ])
 
 const DIR = path.join(__dirname, '_coleta', 'xatu')
