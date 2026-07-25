@@ -450,6 +450,39 @@
   // tick() so reescreve o innerHTML quando ISTO muda -> para de reinserir sprites e recriar as
   // barras a cada 1s (era a piscada). Barras = dono tickHP (150ms); timer = update cirurgico.
   let lastSig = null
+  let lastLider = null   // nome do lider no ultimo desenho: guarda o anti-pisca abaixo
+
+  // ---- ANTI-PISCA das barras ----
+  // O card e' remontado quando QUALQUER numero estavel muda (kills, loot, bolas, profit) — numa
+  // hunt isso e' o tempo todo. O `html` do tick carrega as barras com o valor do proprio tick
+  // (1s atras), enquanto o tickHP as mantem vivas a 150ms. Ou seja: a cada remontagem a barra
+  // VOLTAVA NO TEMPO por um instante ate o tickHP seguinte responder — era isso que aparecia como
+  // barra pulando/piscando. Aqui a gente fotografa o estado AO VIVO antes de destruir o DOM e
+  // reaplica no mesmo frame, sem esperar IPC nenhum.
+  function fotoBarras (){
+    const barras=[]
+    document.querySelectorAll('.herobars .hbar').forEach(b=>{
+      const f=b.querySelector('.hfill'), l=b.querySelector('.hin')
+      barras.push({ cls:b.className, fcls:f&&f.className, w:f&&f.style.width, txt:l&&l.textContent })
+    })
+    if(!barras.length) return null
+    const lv=document.querySelector('.sub .lv')
+    return { barras, lv: lv&&lv.textContent }
+  }
+  function aplicaBarras (foto){
+    if(!foto) return
+    const bs=document.querySelectorAll('.herobars .hbar')
+    foto.barras.forEach((s,i)=>{
+      const b=bs[i]; if(!b||!s) return
+      const f=b.querySelector('.hfill'), l=b.querySelector('.hin')
+      if(s.cls) b.className=s.cls
+      if(f&&s.fcls) f.className=s.fcls
+      if(f&&s.w) f.style.width=s.w
+      if(l&&s.txt) l.textContent=s.txt
+    })
+    const lv=document.querySelector('.sub .lv')
+    if(lv&&foto.lv) lv.textContent=foto.lv
+  }
   async function tick (){
     if(document.hidden) return
     // com o seletor aberto NAO redesenha: o innerHTML novo fecharia o painel na cara do dono
@@ -485,9 +518,17 @@
     const hp=(lid&&lid.hp!=null)?lid.hp:st.hp, hpMax=(lid&&lid.maxHp)||st.hpMax
     const pct=(hp!=null&&hpMax)?Math.max(0,Math.min(100,hp/hpMax*100)):null
     const hpCls = pct==null?'':(pct<=25?'low':(pct<=55?'mid':''))
-    // nivel do treinador: so aparece quando o leitor conseguiu ler (com bridge vivo o DOM
-    // nao e varrido - ver cdp.js). Sem valor, some em vez de mostrar "nv null".
-    const tl = (st.level!=null) ? '<span class="tl">nv '+fmt(st.level)+'</span>' : ''
+    // NIVEL DO TREINADOR (nao confundir com o do POKEMON, que vai no subtitulo).
+    // Fonte autoritativa = REST /api/game/profile, que a ponte guarda em st.api.profile: o WS nao
+    // manda o nivel do treinador e no DOM ele so existe dentro do canvas. O `st.level` antigo vinha
+    // da varredura de DOM, que parou de rodar quando a bridge passou a alimentar o card — por isso
+    // o nivel nunca aparecia. MEDIDO 25/07/2026: st.level do DOM = ausente nas 3 contas, enquanto a
+    // REST devolvia 493 / 432 / 341. Fica o fallback pro caso do modo sem bridge.
+    // Escrito "Nível" por extenso de proposito: o do pokemon usa "nv" — ver a cicatriz do
+    // "Paras nv 334", que nasceu de misturar os dois niveis.
+    const nivelTreinador = (st.api && st.api.profile && st.api.profile.level != null)
+      ? st.api.profile.level : st.level
+    const tl = (nivelTreinador!=null) ? '<span class="tl">Nível '+fmt(nivelTreinador)+'</span>' : ''
     // O tempo so vale quando a bolinha esta VERDE. Antes o contador vinha do field-init e
     // seguia correndo com a conta parada na cidade — bolinha amarela e cronometro andando.
     // Mesma fonte pros dois (st.hunt.seen): ou os dois dizem "cacando", ou nenhum diz.
@@ -542,8 +583,16 @@
     sig=sig.replace(/(<span class="tempo"[^>]*>)[^<]*/,'$1')
     if(sig===lastSig){ const tEl=document.querySelector('.tempo'); if(tEl&&tHunt) tEl.textContent=tHunt; return }
     lastSig=sig
+    // fotografa as barras vivas ANTES de destruir o DOM; se o lider e' o mesmo, elas voltam
+    // exatamente como estavam (sem pulo). Se TROCOU de pokemon, a foto e' do bicho antigo e tem
+    // que ser descartada — quem manda ai e' o tickHP com o estado novo.
+    const foto = fotoBarras()
+    const trocouLider = (lastLider !== (lid && lid.name))
+    lastLider = lid && lid.name
     document.getElementById('app').innerHTML=html
     liga()
+    if(!trocouLider) aplicaBarras(foto)
+    tickHP()   // e ja pede o valor ao vivo, em vez de esperar os proximos 150ms
   }
 
   // ---- arrastar / redimensionar / zerar ----
