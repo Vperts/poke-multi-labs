@@ -18,11 +18,11 @@ const cdp = require('./cdp.js')
 // porta de debug (CDP) unica por conta -> le loot/saldo do jogo
 const DEBUG_PORT_BASE = 9333
 // auto-update: baixa SO os arquivos do app (uns ~100KB) do GitHub, sem rebaixar o Electron
-const REPO_RAW = 'https://raw.githubusercontent.com/ekooll/poke-multi-labs/main'
+const REPO_RAW = 'https://raw.githubusercontent.com/Vperts/poke-multi-labs/main'
 // zip so com a pasta do app (sem o Electron) — traz ate modulos novos (ex: ws) no update
-const UPDATE_ZIP_URL = 'https://github.com/ekooll/poke-multi-labs/releases/latest/download/app-update.zip'
+const UPDATE_ZIP_URL = 'https://github.com/Vperts/poke-multi-labs/releases/latest/download/app-update.zip'
 // fonte da VERSAO publicada = a propria release (mesma fonte do zip -> nunca descasa do que sera baixado)
-const RELEASES_API = 'https://api.github.com/repos/ekooll/poke-multi-labs/releases/latest'
+const RELEASES_API = 'https://api.github.com/repos/Vperts/poke-multi-labs/releases/latest'
 const APP_FILES = ['host-main.js', 'host-preload.js', 'config.js', 'cdp.js', 'win32.ps1', 'popupwatch.ps1', 'focuswatch.ps1', 'renderer/host-toolbar.html', 'renderer/login.html', 'renderer/loot.html', 'renderer/dashboard.html', 'renderer/curtain.html']
 
 const SIDEBAR_W = 206           // DIP (aberta) — bate com .side no CSS

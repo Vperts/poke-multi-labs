@@ -1,13 +1,18 @@
 # Build da versao LEVE (main-lite.js) sem encostar no package.json do app pago.
 # A cicatriz anterior foi editar o package.json na mao e depois reverter; aqui o entry
 # e a versao entram por extraMetadata, entao o app pago segue intacto em 0.4.5.
-appId: com.vperslab.vpertsmultilite
+# appId = identidade do app no Windows (chave de instalacao do NSIS). Trocado de
+# com.vperslab.* para com.vperts.* na migracao do projeto pra org Vperts (25/07/2026).
+# CONSEQUENCIA: quem tinha a 0.9.2/0.9.3 instalada NAO recebe esta por cima — instala do lado.
+# So o Victor tinha (1 download), avisado pra desinstalar a antiga. Nao trocar de novo depois
+# de divulgar. productName segue igual, entao a pasta de userData (sessoes das contas) e' a mesma.
+appId: com.vperts.multileve
 productName: VpertsMultiLeve
 directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.9.3
+  version: 0.9.4
 files:
   - main-lite.js
   - lite-titlebar-preload.js
@@ -54,7 +59,13 @@ files:
 win:
   target: nsis
   icon: renderer/logo-vp.ico            # icone do app/exe + dos atalhos (logo Vperts, 256x256)
+  # MANTER false: por true, o electron-builder tenta extrair o winCodeSign (que tem symlinks de
+  # macOS .dylib) e FALHA aqui sem Modo de Desenvolvedor/admin ("nao tem o privilegio necessario"),
+  # e o build nem sai. O icone e os metadados do exe entram pelo afterPack abaixo, que chama o
+  # rcedit avulso e nao depende do winCodeSign. Ver cicatriz-icone-exe-signandedit-wincodesign.
   signAndEditExecutable: false
+# injeta icone Vperts + ProductVersion/CompanyName no exe (compensa o signAndEditExecutable false)
+afterPack: build/afterPack.js
 nsis:
   oneClick: true                        # duplo-clique instala e ja abre, sem telas
   perMachine: false                     # instala pro usuario (sem prompt de admin)
@@ -68,6 +79,6 @@ nsis:
 # do GitHub retornar ela — e' de la que o updater default le o latest.yml.
 publish:
   provider: github
-  owner: ekooll
+  owner: Vperts
   repo: poke-multi-labs
   releaseType: release

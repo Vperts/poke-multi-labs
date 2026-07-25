@@ -7,9 +7,10 @@
     "start": "electron .",
     "host": "electron host-main.js",
     "launch": "node launcher.js",
-    "dist": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "dist:lite": "bash build-lite.sh"
   },
-  "author": "VpersLAB",
+  "author": "Vperts",
   "license": "UNLICENSED",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -26,7 +27,7 @@
     "electron-builder": "^25.1.8"
   },
   "build": {
-    "appId": "com.vperslab.pokemultilabs",
+    "appId": "com.vperts.pokemultilabs",
     "productName": "Poke Multi-Labs",
     "files": [
       "host-main.js",

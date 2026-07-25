@@ -586,7 +586,7 @@ ipcMain.handle('login', () => ({ ok: true }));
 ipcMain.handle('signup', () => ({ ok: true }));
 ipcMain.handle('read-loot', () => null);
 ipcMain.handle('open-loot', () => true);
-// ---- AUTO-UPDATE (electron-updater) — canal `latest` do release publico ekooll/poke-multi-labs
+// ---- AUTO-UPDATE (electron-updater) — canal `latest` do release publico Vperts/poke-multi-labs
 // (publish config no electron-builder-lite.yml gera o app-update.yml embutido). So funciona no app
 // EMPACOTADO NSIS; em dev retorna packaged:false. O botao "Atualizar" da sidebar chama check-update
 // (compara versao) e, se tiver nova, apply-update (baixa o instalador e reinicia instalando).
