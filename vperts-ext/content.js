@@ -785,9 +785,13 @@
   if (window.__vpDivul) return; window.__vpDivul = 1;
   if (!/(^|\.)idleworld\.online$/.test(location.hostname)) return;
 
-  // Conta autorizada — FIXA de proposito (e o que impede o script de divulgar de
-  // outra conta). Aceita e-mail ou id, varios, case-insensitive.
-  var CONTAS_AUTORIZADAS = ['pertinhesv@gmail.com'];   // conta de stream do Victor (VPERTSZ)
+  // Conta autorizada — guardada como HASH (SHA-256) do e-mail (ou do id), pra NAO expor a
+  // identidade neste repo publico. FIXA de proposito (e o que impede o script de divulgar de
+  // outra conta). Compara o hash do valor logado (sempre lowercased/trim antes de hashear).
+  // Pra trocar/adicionar conta: sha256hex(email.toLowerCase()) e cola o hex aqui.
+  var CONTAS_AUTORIZADAS_HASH = [
+    '7b8caaefabd0f8822f2d047322913f65edcf9f5f1e03b3f6e26df7950ba15c58'   // Victor (VPERTSZ)
+  ];
 
   var PADRAO = {
     mensagem: '🔴 LIVE: :vip44: VPERTSZ :vip44: | 💎 Farme pontos na !LOJINHA e troque por dimas e outros prêmios!\n\nÉ mais fácil perguntar na live do que aqui no chat. Link: t witch.tv/vpertsz — é só remover o espaço. :vip44:',
@@ -832,13 +836,25 @@
       return { id: id ? String(id) : null, email: email || null };
     } catch (e) { return null; }
   }
-  function contaAutorizada (idt) {
-    if (!idt) return false;
-    if (!CONTAS_AUTORIZADAS.length) return false;
-    var ok = CONTAS_AUTORIZADAS.map(function (v) { return String(v).trim().toLowerCase(); }).filter(Boolean);
-    if (idt.email && ok.indexOf(idt.email) !== -1) return true;
-    if (idt.id && ok.indexOf(idt.id.toLowerCase()) !== -1) return true;
-    return false;
+  function sha256hex (s) {
+    try {
+      var buf = new TextEncoder().encode(String(s));
+      return crypto.subtle.digest('SHA-256', buf).then(function (d) {
+        return [].map.call(new Uint8Array(d), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      });
+    } catch (e) { return Promise.resolve(null); }
+  }
+  // async -> Promise<bool>. Hasheia o e-mail E o id da conta logada e confere contra a lista.
+  function autorizado (idt) {
+    if (!idt || !CONTAS_AUTORIZADAS_HASH.length) return Promise.resolve(false);
+    var alvo = CONTAS_AUTORIZADAS_HASH.map(function (h) { return String(h).trim().toLowerCase(); });
+    var cands = [];
+    if (idt.email) cands.push(idt.email.trim().toLowerCase());
+    if (idt.id) cands.push(idt.id.trim().toLowerCase());
+    if (!cands.length) return Promise.resolve(false);
+    return Promise.all(cands.map(sha256hex)).then(function (hs) {
+      return hs.some(function (h) { return h && alvo.indexOf(h) !== -1; });
+    });
   }
 
   var automacaoAtiva = false, temporizadorEnvio = null, temporizadorContador = null, proximoEnvioEm = null, enviando = false;
@@ -885,20 +901,22 @@
   }
   function enviarDivulgacao (origem) {
     origem = origem || 'teste';
-    if (!contaAutorizada(lerIdentidade())) { detalhes('Conta não autorizada. Envio bloqueado.', 'erro'); return Promise.resolve(false); }
-    if (enviando) { detalhes('Já existe uma tentativa de envio em andamento.'); return Promise.resolve(false); }
-    enviando = true; botoes();
-    var campo = campoChat();
-    if (!campo) { detalhes('Campo "Falar em Mundo..." não encontrado.', 'erro'); enviando = false; botoes(); return Promise.resolve(false); }
-    preenche(campo, obterMensagemFormatada());
-    detalhes(origem === 'teste' ? 'Mensagem preenchida. Tentando enviar...' : 'Envio automático em andamento...');
-    return espera(CONFIG.atrasoAntesDeEnviarMs).then(function () {
-      var b = botaoEnviar();
-      if (b && !b.disabled) { b.click(); detalhes('Enviado às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
-      else { enter(campo); detalhes('Enviado (Enter) às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
-      return true;
-    }).catch(function (e) { console.error('[Divulgação]', e); detalhes('Erro na tentativa de envio.', 'erro'); return false; })
-      .then(function (r) { enviando = false; botoes(); return r; });
+    return autorizado(lerIdentidade()).then(function (ok) {
+      if (!ok) { detalhes('Conta não autorizada. Envio bloqueado.', 'erro'); return false; }
+      if (enviando) { detalhes('Já existe uma tentativa de envio em andamento.'); return false; }
+      enviando = true; botoes();
+      var campo = campoChat();
+      if (!campo) { detalhes('Campo "Falar em Mundo..." não encontrado.', 'erro'); enviando = false; botoes(); return false; }
+      preenche(campo, obterMensagemFormatada());
+      detalhes(origem === 'teste' ? 'Mensagem preenchida. Tentando enviar...' : 'Envio automático em andamento...');
+      return espera(CONFIG.atrasoAntesDeEnviarMs).then(function () {
+        var b = botaoEnviar();
+        if (b && !b.disabled) { b.click(); detalhes('Enviado às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
+        else { enter(campo); detalhes('Enviado (Enter) às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
+        return true;
+      }).catch(function (e) { console.error('[Divulgação]', e); detalhes('Erro na tentativa de envio.', 'erro'); return false; })
+        .then(function (r) { enviando = false; botoes(); return r; });
+    });
   }
   function fmt (ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2); }
   function status () {
@@ -1015,8 +1033,10 @@
     if (!document.body) { setTimeout(function () { boot(tentativas); }, 500); return; }
     var idt = lerIdentidade();
     if (!idt && tentativas < 60) { setTimeout(function () { boot(tentativas + 1); }, 500); return; }
-    if (!contaAutorizada(idt)) return;   // SILENCIOSO: nao e a conta do Victor -> nao cria nada
-    carregarConfig(); criarPainel();
+    autorizado(idt).then(function (ok) {
+      if (!ok) return;   // SILENCIOSO: nao e a conta do Victor -> nao cria nada
+      carregarConfig(); criarPainel();
+    });
   }
   // gancho de verificacao/debug: SO mostra o painel — o envio (enviarDivulgacao) re-checa a
   // conta autorizada, entao forcar a UI numa conta nao-Victor nao consegue divulgar nada.
