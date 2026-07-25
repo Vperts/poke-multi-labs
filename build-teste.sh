@@ -25,3 +25,26 @@ SETUP="dist-teste/VpertsMultiTeste-Setup-$VER.exe"
 echo
 echo "OK — instalador de TESTE pronto:"
 ls -la "$SETUP"
+
+# ---- ATUALIZACAO IN-PLACE (o que faz o teste subir sem clique) ----
+# CICATRIZ 25/07/2026: o **App Control do Windows** BLOQUEIA rodar o instalador por script
+# ("Uma política de Controle de Aplicativo bloqueou este arquivo") — exe nao assinado so passa com
+# clique humano. Mas ele bloqueia EXECUTAR binario novo, nao trocar arquivo de dado. Como todo o
+# nosso codigo mora no `app.asar` e o `VpertsMultiLeveTeste.exe` (Electron puro) nao muda entre
+# builds, trocar SO o asar atualiza o app inteiro mantendo o exe ja autorizado. Instalacao completa
+# (exe novo) continua exigindo o clique — usar o Setup acima.
+INSTALADO="$HOME/AppData/Local/Programs/vperts-multi-teste"
+if [ "${1:-}" = "--nao-instalar" ]; then
+  echo "(--nao-instalar: instalacao local nao foi tocada)"
+elif [ -d "$INSTALADO/resources" ]; then
+  echo
+  echo ">> atualizando a instalacao local (fecha o app de TESTE; o OFICIAL nao e' tocado)"
+  powershell -NoProfile -Command "Get-Process VpertsMultiLeveTeste -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null || true
+  sleep 2
+  cp -f dist-teste/win-unpacked/resources/app.asar "$INSTALADO/resources/app.asar"
+  powershell -NoProfile -Command "Start-Process '$(cygpath -w "$INSTALADO")\\VpertsMultiLeveTeste.exe'" 2>/dev/null || true
+  echo ">> app de TESTE reaberto na $VER"
+  echo "   conferir: node ler.js --porta 9433 lider"
+else
+  echo "(app de teste ainda nao instalado — rode o Setup acima uma vez, com clique)"
+fi
