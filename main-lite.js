@@ -439,6 +439,16 @@ ipcMain.on('set-sidebar', (_e, collapsed) => { sideW = collapsed ? SIDE_RAIL : S
 ipcMain.handle('relaunch', (_e, n) => { n = Math.max(1, Math.min(MAX, n | 0)); while (slots.length > n) closeSlot(slots.length - 1); while (slots.length < n) openAccount(nextFreeNum()); layout(); emitState(); });
 ipcMain.handle('add-account', () => { if (slots.length < MAX) { openAccount(nextFreeNum()); layout(); emitState(); } });
 ipcMain.handle('close-account', (_e, i) => { closeSlot(i); layout(); emitState(); });
+// RECARREGAR CONTA: quando a TELA do jogo trava, recarrega SO aquela view (sem reiniciar o app).
+// reload() e' comando do MAIN -> funciona mesmo com o renderer travado. Fallback: recarrega a URL.
+// O bridge (preload) restaura o token no load, entao volta logado direto no /play.
+ipcMain.handle('recarregar-conta', (_e, i) => {
+  const s = slots[i]; if (!s) return { ok: false };
+  try { s.view.webContents.reloadIgnoringCache(); }
+  catch (e) { try { s.view.webContents.loadURL(sessions[s.num] ? GAME + '/play' : LOGIN); } catch (e2) {} }
+  try { focaConta(s); } catch (e) {}
+  return { ok: true };
+});
 // TROCAR CONTA: desloga a conta DAQUELA janela (Google + jogo) pra entrar em outra. So apagar o
 // token nao basta — o cookie do accounts.google.com fica preso na particao persistente e o
 // "Continuar com Google" re-seleciona a mesma conta. Entao: apaga o token salvo + LIMPA a particao

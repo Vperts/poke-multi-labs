@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('ml', {
   addAccount: () => ipcRenderer.invoke('add-account'),
   closeAccount: (idx) => ipcRenderer.invoke('close-account', idx),
   trocarConta: (idx) => ipcRenderer.invoke('trocar-conta', idx),
+  recarregarConta: (idx) => ipcRenderer.invoke('recarregar-conta', idx),
   setLayout: (m) => ipcRenderer.send('set-layout', m),
   setSolo: (idx) => ipcRenderer.send('set-solo', idx),
   setSidebar: (collapsed) => ipcRenderer.send('set-sidebar', collapsed),
