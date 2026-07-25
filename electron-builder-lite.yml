@@ -7,7 +7,7 @@ directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.8.1
+  version: 0.8.2
 files:
   - main-lite.js
   - lite-titlebar-preload.js
@@ -60,6 +60,7 @@ nsis:
   allowToChangeInstallationDirectory: false
   createDesktopShortcut: true           # atalho na Area de Trabalho, com o icone
   createStartMenuShortcut: true         # e no Menu Iniciar
+  shortcutName: Vperts Multi (Leve)     # nome IGUAL ao atalho do dono (ver /print 24/07)
   artifactName: VpertsMultiLeve-Setup-${version}.exe
 # publish = canal do AUTO-UPDATE. Gera o latest.yml e embute o app-update.yml (owner/repo) que o
 # electron-updater le pra achar versao nova. Release NORMAL (nao prerelease) pra o /releases/latest
