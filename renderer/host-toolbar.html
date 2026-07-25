@@ -80,6 +80,17 @@
   .ax{flex:none;width:26px;height:26px;padding:0;background:transparent;border:0;border-radius:7px;
     color:var(--faint);font-size:14px;cursor:pointer}
   .ax:hover{color:var(--red-2);background:rgba(226,75,53,.12)}
+  .kebab{font-size:19px;font-weight:800;line-height:1;color:var(--muted)}
+  .kebab:hover{color:var(--gold);background:rgba(229,179,79,.14)}
+  /* ---- menu ⋮ de acoes da conta ---- */
+  .cmenu{position:fixed;z-index:100;min-width:172px;padding:5px;border-radius:11px;
+    background:linear-gradient(180deg,#1b1310,#120b09);border:1px solid var(--line-strong);
+    box-shadow:0 12px 34px rgba(0,0,0,.6)}
+  .cmenu button{display:flex;align-items:center;gap:10px;width:100%;background:transparent;border:0;
+    color:var(--cream);font-family:inherit;font-size:13.5px;font-weight:600;text-align:left;
+    padding:10px 12px;border-radius:8px;cursor:pointer}
+  .cmenu button:hover{background:rgba(255,255,255,.07);color:var(--gold)}
+  .cmenu button.danger:hover{background:rgba(226,75,53,.16);color:#ff8f7f}
   .addbtn{background:transparent;border:1px dashed var(--line-strong);color:var(--gold-soft);border-radius:11px;
     padding:9px 0;font-weight:700;font-size:13px;cursor:pointer;transition:.14s}
   .addbtn:hover{color:var(--gold);border-color:var(--gold)}
@@ -200,6 +211,34 @@
     if (val && val !== ('Conta ' + num)) names[num] = val; else delete names[num]
     saveNames(); if (last) render(last)
   }
+  // ---- menu ⋮ de acoes da conta (renomear/recarregar/trocar/fechar) — desamontoa a linha ----
+  let _cmenu = null
+  function fechaMenuConta () { if (_cmenu) { _cmenu.remove(); _cmenu = null; document.removeEventListener('click', fechaMenuConta) } }
+  function abreMenuConta (anchor, sl, row) {
+    const mesmo = _cmenu && _cmenu._anchor === anchor
+    fechaMenuConta()
+    if (mesmo) return   // clicou no MESMO ⋮ que estava aberto -> so fecha (toggle)
+    const m = document.createElement('div'); m.className = 'cmenu'; m._anchor = anchor
+    m.innerHTML =
+      '<button data-a="rename">✎ Renomear</button>' +
+      '<button data-a="reload">⟳ Recarregar tela</button>' +
+      '<button data-a="switch">⇄ Trocar de conta</button>' +
+      '<button data-a="close" class="danger">✕ Fechar conta</button>'
+    document.body.appendChild(m)
+    const r = anchor.getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight
+    let left = Math.max(6, Math.min(r.right - mw, window.innerWidth - mw - 6))
+    let top = r.bottom + 4; if (top + mh > window.innerHeight - 6) top = Math.max(6, r.top - mh - 4)
+    m.style.left = left + 'px'; m.style.top = top + 'px'
+    m.querySelectorAll('button').forEach(b => b.onclick = (e) => {
+      e.stopPropagation(); const a = b.dataset.a; fechaMenuConta()
+      if (a === 'rename') startEdit(row, sl)
+      else if (a === 'reload') { try { window.ml.recarregarConta(sl.i) } catch (e) {} }
+      else if (a === 'switch') { if (confirm('Trocar de conta nesta janela?\n\nVai deslogar o Google/jogo desta tela e voltar pro login. As outras contas não são afetadas.')) window.ml.trocarConta(sl.i) }
+      else if (a === 'close') window.ml.closeAccount(sl.i)
+    })
+    _cmenu = m
+    setTimeout(() => document.addEventListener('click', fechaMenuConta), 0)
+  }
   function startEdit (row, sl) {
     const btn = row.querySelector('.aname'); if (!btn) return
     const inp = document.createElement('input')
@@ -243,23 +282,12 @@
       row.dataset.num = sl.num   // pra o alerta piscar ESTA conta
       const nm = nameOf(sl.num)
       row.innerHTML = '<span class="dot' + (sl.embedded ? ' up' : '') + '"></span>' +
-        '<button class="aname" title="Clique: focar · Duplo-clique ou ✎: renomear"></button>' +
-        '<button class="ax" title="Renomear (seu personagem)">✎</button>' +
-        '<button class="ax" title="Recarregar a tela desta conta (se o jogo travar)">⟳</button>' +
-        '<button class="ax" title="Trocar de conta (sai do Google nesta janela e volta pro login)">⇄</button>' +
-        '<button class="ax" title="Fechar">✕</button>'
+        '<button class="aname" title="Clique: focar · Duplo-clique: renomear"></button>' +
+        '<button class="ax kebab" title="Ações da conta">⋮</button>'
       const an = row.querySelector('.aname')
       an.textContent = nm
       wireFocusEdit(an, sl, () => startEdit(row, sl))
-      const axs = row.querySelectorAll('.ax')
-      axs[0].onclick = (e) => { e.stopPropagation(); startEdit(row, sl) }
-      axs[1].onclick = (e) => { e.stopPropagation()
-        const b = e.currentTarget; const o = b.textContent; b.textContent = '…'; b.disabled = true
-        Promise.resolve(window.ml.recarregarConta(sl.i)).finally(() => setTimeout(() => { b.textContent = o; b.disabled = false }, 1200)) }
-      axs[2].onclick = (e) => { e.stopPropagation()
-        if (confirm('Trocar de conta nesta janela?\n\nVai deslogar o Google/jogo desta tela e voltar pro login pra você entrar com outra conta. As outras contas não são afetadas.'))
-          window.ml.trocarConta(sl.i) }
-      axs[3].onclick = () => window.ml.closeAccount(sl.i)
+      row.querySelector('.kebab').onclick = (e) => { e.stopPropagation(); abreMenuConta(e.currentTarget, sl, row) }
       box.appendChild(row)
     })
     // + Conta (respeita o limite da licenca)
