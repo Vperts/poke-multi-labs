@@ -772,3 +772,254 @@
   puxaApi();
   setInterval(puxaApi, 45000);
 })();
+
+// ==========================================================================
+// DIVULGACAO DA LIVE (embutida no app) — posta o anuncio da live do Victor no
+// chat do MUNDO. TRAVADA por conta: so acende na conta autorizada; em qualquer
+// outra conta (e pra qualquer outro usuario do app) fica 100% SILENCIOSA, sem
+// painel. Roda dentro do Vperts Multi sem precisar de Tampermonkey.
+// Equivalente ao userscript v4.0 do Gabriel; a versao Tampermonkey (com painel
+// "conta nao autorizada") vive fora daqui, no scratchpad.
+// ==========================================================================
+(function () {
+  if (window.__vpDivul) return; window.__vpDivul = 1;
+  if (!/(^|\.)idleworld\.online$/.test(location.hostname)) return;
+
+  // Conta autorizada — FIXA de proposito (e o que impede o script de divulgar de
+  // outra conta). Aceita e-mail ou id, varios, case-insensitive.
+  var CONTAS_AUTORIZADAS = ['pertinhesv@gmail.com'];   // conta de stream do Victor (VPERTSZ)
+
+  var PADRAO = {
+    mensagem: '🔴 LIVE: :vip44: VPERTSZ :vip44: | 💎 Farme pontos na !LOJINHA e troque por dimas e outros prêmios!\n\nÉ mais fácil perguntar na live do que aqui no chat. Link: t witch.tv/vpertsz — é só remover o espaço. :vip44:',
+    intervaloMinutos: 3,
+    atrasoAntesDeEnviarMs: 500
+  };
+  var CHAVE = { msg: 'vperts_div_msg', intervalo: 'vperts_div_intervalo', discreto: 'vperts_div_discreto' };
+  var CONFIG = { mensagem: PADRAO.mensagem, intervaloMinutos: PADRAO.intervaloMinutos, atrasoAntesDeEnviarMs: PADRAO.atrasoAntesDeEnviarMs };
+
+  function carregarConfig () {
+    try {
+      var m = localStorage.getItem(CHAVE.msg);
+      if (m != null && m.trim()) CONFIG.mensagem = m;
+      var i = parseInt(localStorage.getItem(CHAVE.intervalo), 10);
+      if (isFinite(i) && i >= 1) CONFIG.intervaloMinutos = i;
+    } catch (e) {}
+  }
+  function salvarConfig (mensagem, intervalo) {
+    try { localStorage.setItem(CHAVE.msg, mensagem); localStorage.setItem(CHAVE.intervalo, String(intervalo)); } catch (e) {}
+    CONFIG.mensagem = mensagem; CONFIG.intervaloMinutos = intervalo;
+  }
+
+  function decodificarJwt (jwt) {
+    try {
+      var base = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var json = decodeURIComponent(atob(base).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(json);
+    } catch (e) { return null; }
+  }
+  function lerIdentidade () {
+    try {
+      var bruto = sessionStorage.getItem('pokeweb:tokens') || localStorage.getItem('pokeweb:tokens');
+      if (!bruto) return null;
+      var tokens = JSON.parse(bruto);
+      var jwt = tokens.accessToken || tokens.access_token || tokens.token;
+      if (!jwt) return null;
+      var c = decodificarJwt(jwt); if (!c) return null;
+      var id = c.sub || c.userId || c.user_id || c.id || null;
+      var email = (c.email || c.mail || '').toString().trim().toLowerCase();
+      return { id: id ? String(id) : null, email: email || null };
+    } catch (e) { return null; }
+  }
+  function contaAutorizada (idt) {
+    if (!idt) return false;
+    if (!CONTAS_AUTORIZADAS.length) return false;
+    var ok = CONTAS_AUTORIZADAS.map(function (v) { return String(v).trim().toLowerCase(); }).filter(Boolean);
+    if (idt.email && ok.indexOf(idt.email) !== -1) return true;
+    if (idt.id && ok.indexOf(idt.id.toLowerCase()) !== -1) return true;
+    return false;
+  }
+
+  var automacaoAtiva = false, temporizadorEnvio = null, temporizadorContador = null, proximoEnvioEm = null, enviando = false;
+
+  function obterMensagemFormatada () { return CONFIG.mensagem.replace(/\s+/g, ' ').trim(); }
+  function visivel (el) {
+    if (!el) return false;
+    var s = getComputedStyle(el), b = el.getBoundingClientRect();
+    return s.display !== 'none' && s.visibility !== 'hidden' && b.width > 0 && b.height > 0;
+  }
+  function campoChat () {
+    return [].slice.call(document.querySelectorAll('input, textarea')).filter(function (c) {
+      var ph = c.getAttribute('placeholder') || '';
+      return ph.toLowerCase().indexOf('falar em mundo') !== -1 && visivel(c);
+    })[0];
+  }
+  function botaoEnviar () {
+    return [].slice.call(document.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"]')).filter(function (el) {
+      var t = (el.textContent || el.value || '').trim().toLowerCase();
+      return t === 'enviar' && visivel(el);
+    })[0];
+  }
+  function preenche (campo, valor) {
+    var anterior = campo.value;
+    var proto = campo instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    var desc = Object.getOwnPropertyDescriptor(proto, 'value');
+    campo.focus();
+    if (desc && desc.set) desc.set.call(campo, valor); else campo.value = valor;
+    if (campo._valueTracker) campo._valueTracker.setValue(anterior);
+    campo.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: valor }));
+    campo.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+  }
+  function enter (campo) {
+    var cfg = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+    campo.dispatchEvent(new KeyboardEvent('keydown', cfg));
+    campo.dispatchEvent(new KeyboardEvent('keypress', cfg));
+    campo.dispatchEvent(new KeyboardEvent('keyup', cfg));
+  }
+  function espera (ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function detalhes (texto, tipo) {
+    var d = document.querySelector('#vperts-divulgacao-detalhes'); if (!d) return;
+    d.textContent = texto;
+    d.style.color = tipo === 'erro' ? '#ff7777' : tipo === 'sucesso' ? '#7ee787' : '#d6a93d';
+  }
+  function enviarDivulgacao (origem) {
+    origem = origem || 'teste';
+    if (!contaAutorizada(lerIdentidade())) { detalhes('Conta não autorizada. Envio bloqueado.', 'erro'); return Promise.resolve(false); }
+    if (enviando) { detalhes('Já existe uma tentativa de envio em andamento.'); return Promise.resolve(false); }
+    enviando = true; botoes();
+    var campo = campoChat();
+    if (!campo) { detalhes('Campo "Falar em Mundo..." não encontrado.', 'erro'); enviando = false; botoes(); return Promise.resolve(false); }
+    preenche(campo, obterMensagemFormatada());
+    detalhes(origem === 'teste' ? 'Mensagem preenchida. Tentando enviar...' : 'Envio automático em andamento...');
+    return espera(CONFIG.atrasoAntesDeEnviarMs).then(function () {
+      var b = botaoEnviar();
+      if (b && !b.disabled) { b.click(); detalhes('Enviado às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
+      else { enter(campo); detalhes('Enviado (Enter) às ' + new Date().toLocaleTimeString() + '.', 'sucesso'); }
+      return true;
+    }).catch(function (e) { console.error('[Divulgação]', e); detalhes('Erro na tentativa de envio.', 'erro'); return false; })
+      .then(function (r) { enviando = false; botoes(); return r; });
+  }
+  function fmt (ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return ('0' + Math.floor(s / 60)).slice(-2) + ':' + ('0' + (s % 60)).slice(-2); }
+  function status () {
+    var st = document.querySelector('#vperts-divulgacao-status'); if (!st) return;
+    if (!automacaoAtiva || !proximoEnvioEm) { st.textContent = 'Automação pausada'; st.style.color = '#d5d5d5'; return; }
+    st.textContent = 'Ativo — próximo envio em ' + fmt(proximoEnvioEm - Date.now()); st.style.color = '#7ee787';
+  }
+  function botoes () {
+    var t = document.querySelector('#vperts-testar'), i = document.querySelector('#vperts-iniciar'), p = document.querySelector('#vperts-parar');
+    if (t) t.disabled = enviando;
+    if (i) { i.disabled = automacaoAtiva || enviando; i.textContent = 'Iniciar (' + CONFIG.intervaloMinutos + 'm)'; }
+    if (p) p.disabled = !automacaoAtiva;
+  }
+  function agenda () {
+    if (!automacaoAtiva) return;
+    clearTimeout(temporizadorEnvio);
+    var ms = CONFIG.intervaloMinutos * 60 * 1000;
+    proximoEnvioEm = Date.now() + ms; status();
+    temporizadorEnvio = setTimeout(function () {
+      if (!automacaoAtiva) return;
+      enviarDivulgacao('automatico').then(function () { if (automacaoAtiva) agenda(); });
+    }, ms);
+  }
+  function iniciar () {
+    if (automacaoAtiva) return;
+    automacaoAtiva = true;
+    detalhes('Automação iniciada. Primeiro envio em ' + CONFIG.intervaloMinutos + ' min.', 'sucesso');
+    agenda();
+    clearInterval(temporizadorContador); temporizadorContador = setInterval(status, 1000);
+    status(); botoes();
+  }
+  function parar () {
+    automacaoAtiva = false; proximoEnvioEm = null;
+    clearTimeout(temporizadorEnvio); clearInterval(temporizadorContador);
+    temporizadorEnvio = null; temporizadorContador = null;
+    status(); botoes(); detalhes('Divulgação automática interrompida.');
+  }
+  function setDiscreto (on) {
+    var corpo = document.querySelector('#vperts-corpo'), painel = document.querySelector('#vperts-divulgacao-painel'), olho = document.querySelector('#vperts-olho');
+    if (!corpo || !painel) return;
+    if (on) { corpo.style.display = 'none'; painel.style.width = 'auto'; painel.style.padding = '6px 9px'; painel.style.opacity = '0.55'; if (olho) olho.textContent = '📣'; painel.title = 'Divulgação (modo discreto) — clique no 📣 ou Alt+D para abrir'; }
+    else { corpo.style.display = ''; painel.style.width = '280px'; painel.style.padding = '13px'; painel.style.opacity = '1'; if (olho) olho.textContent = '👁'; painel.title = ''; }
+    try { localStorage.setItem(CHAVE.discreto, on ? '1' : '0'); } catch (e) {}
+  }
+  function alternarDiscreto () {
+    var c = document.querySelector('#vperts-corpo');
+    setDiscreto(!(c && c.style.display === 'none'));
+  }
+  function alternarConfig () { var c = document.querySelector('#vperts-config'); if (c) c.style.display = c.style.display === 'none' ? 'block' : 'none'; }
+
+  function criarPainel () {
+    if (document.querySelector('#vperts-divulgacao-painel')) return;
+    var painel = document.createElement('div');
+    painel.id = 'vperts-divulgacao-painel';
+    painel.style.cssText = 'position:fixed;left:40%;bottom:18px;transform:translateX(-50%);z-index:2147483000;width:280px;padding:13px;box-sizing:border-box;border:1px solid #d6a93d;border-radius:9px;background:rgba(12,15,20,0.97);color:#fff;font-family:Arial,sans-serif;font-size:13px;box-shadow:0 5px 20px rgba(0,0,0,0.5);';
+    var est = 'padding:7px 9px;border:0;border-radius:5px;cursor:pointer;';
+    painel.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">' +
+        '<span style="font-size:14px;font-weight:bold;">Divulgação da Live</span>' +
+        '<span>' +
+          '<button id="vperts-cfg" type="button" title="Configurar mensagem e intervalo" style="background:none;border:0;color:#fff;cursor:pointer;font-size:15px;">⚙</button> ' +
+          '<button id="vperts-olho" type="button" title="Modo discreto (Alt+D)" style="background:none;border:0;color:#fff;cursor:pointer;font-size:15px;">👁</button>' +
+        '</span>' +
+      '</div>' +
+      '<div id="vperts-corpo">' +
+        '<div id="vperts-divulgacao-status" style="margin-bottom:6px;color:#d5d5d5;font-weight:bold;">Automação pausada</div>' +
+        '<div id="vperts-divulgacao-detalhes" style="min-height:30px;margin-bottom:10px;color:#d6a93d;font-size:11px;line-height:1.35;">Use "Testar agora" para um único envio.</div>' +
+        '<div style="display:flex;gap:5px;flex-wrap:wrap;">' +
+          '<button id="vperts-testar" type="button" style="' + est + '">Testar agora</button>' +
+          '<button id="vperts-iniciar" type="button" style="' + est + '">Iniciar (3m)</button>' +
+          '<button id="vperts-parar" type="button" disabled style="' + est + '">Parar</button>' +
+        '</div>' +
+        '<div id="vperts-config" style="display:none;margin-top:11px;border-top:1px solid #333;padding-top:9px;">' +
+          '<div style="font-size:11px;color:#aaa;margin-bottom:3px;">Mensagem</div>' +
+          '<textarea id="vperts-cfg-msg" rows="4" style="width:100%;box-sizing:border-box;background:#0b0e13;color:#fff;border:1px solid #444;border-radius:5px;padding:6px;font-size:11px;resize:vertical;"></textarea>' +
+          '<div style="display:flex;align-items:center;gap:6px;margin-top:7px;">' +
+            '<span style="font-size:11px;color:#aaa;">Intervalo (min):</span>' +
+            '<input id="vperts-cfg-int" type="number" min="1" step="1" style="width:64px;background:#0b0e13;color:#fff;border:1px solid #444;border-radius:5px;padding:5px;font-size:12px;">' +
+            '<button id="vperts-cfg-salvar" type="button" style="' + est + 'margin-left:auto;background:#2f7d46;color:#fff;">Salvar</button>' +
+          '</div>' +
+          '<div id="vperts-cfg-aviso" style="font-size:10px;color:#7ee787;margin-top:5px;min-height:12px;"></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(painel);
+
+    document.querySelector('#vperts-testar').addEventListener('click', function () { enviarDivulgacao('teste'); });
+    document.querySelector('#vperts-iniciar').addEventListener('click', iniciar);
+    document.querySelector('#vperts-parar').addEventListener('click', parar);
+    document.querySelector('#vperts-olho').addEventListener('click', alternarDiscreto);
+    document.querySelector('#vperts-cfg').addEventListener('click', function () {
+      document.querySelector('#vperts-cfg-msg').value = CONFIG.mensagem;
+      document.querySelector('#vperts-cfg-int').value = CONFIG.intervaloMinutos;
+      document.querySelector('#vperts-cfg-aviso').textContent = '';
+      alternarConfig();
+    });
+    document.querySelector('#vperts-cfg-salvar').addEventListener('click', function () {
+      var msg = document.querySelector('#vperts-cfg-msg').value;
+      var intv = parseInt(document.querySelector('#vperts-cfg-int').value, 10);
+      if (!isFinite(intv) || intv < 1) intv = 1;
+      salvarConfig(msg, intv);
+      document.querySelector('#vperts-cfg-aviso').textContent = 'Salvo ✓';
+      botoes();
+      if (automacaoAtiva) { parar(); iniciar(); }
+    });
+    window.addEventListener('keydown', function (e) { if (e.altKey && (e.key === 'd' || e.key === 'D')) { e.preventDefault(); alternarDiscreto(); } });
+
+    status(); botoes();
+    var disc = '0'; try { disc = localStorage.getItem(CHAVE.discreto) || '0'; } catch (e) {}
+    if (disc === '1') setDiscreto(true);
+  }
+
+  function boot (tentativas) {
+    tentativas = tentativas || 0;
+    if (!document.body) { setTimeout(function () { boot(tentativas); }, 500); return; }
+    var idt = lerIdentidade();
+    if (!idt && tentativas < 60) { setTimeout(function () { boot(tentativas + 1); }, 500); return; }
+    if (!contaAutorizada(idt)) return;   // SILENCIOSO: nao e a conta do Victor -> nao cria nada
+    carregarConfig(); criarPainel();
+  }
+  // gancho de verificacao/debug: SO mostra o painel — o envio (enviarDivulgacao) re-checa a
+  // conta autorizada, entao forcar a UI numa conta nao-Victor nao consegue divulgar nada.
+  window.__vpDivulForce = function () { carregarConfig(); criarPainel(); };
+  boot();
+})();
