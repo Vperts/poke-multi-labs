@@ -368,7 +368,11 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   loadSessions();               // antes de abrir as contas: decide /play vs /login
   win = new BaseWindow({ width: 1720, height: 1000, minWidth: 940, minHeight: 620,
-    frame: false, backgroundColor: BORDER_COLOR, title: 'Vperts Multi' });
+    frame: false, backgroundColor: BORDER_COLOR, title: 'Vperts Multi',
+    // sem isto a janela (frameless) aparecia com o icone generico do Electron (atomo) na barra
+    // de tarefas, mesmo com o exe/atalho ja usando o logo Vperts. O icone da JANELA e' o que o
+    // Windows mostra na taskbar em runtime — tem que ser setado explicitamente aqui.
+    icon: path.join(__dirname, 'renderer', 'logo-vp.ico') });
   buildChrome();
   for (let k = 0; k < START; k++) openAccount(nextFreeNum());
   layout();
