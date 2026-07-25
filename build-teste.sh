@@ -20,7 +20,7 @@ VER=$(sed -n 's/^  version: *//p' electron-builder-lite.yml | head -1)
 echo ">> build de TESTE $VER"
 npx electron-builder --win -c build/electron-builder-teste.gen.yml -p never
 
-SETUP="dist/VpertsMultiTeste-Setup-$VER.exe"
+SETUP="dist-teste/VpertsMultiTeste-Setup-$VER.exe"
 [ -f "$SETUP" ] || { echo "ERRO: instalador de teste nao gerado: $SETUP"; exit 1; }
 echo
 echo "OK — instalador de TESTE pronto:"
