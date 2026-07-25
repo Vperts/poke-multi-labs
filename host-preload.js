@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('ml', {
   // alertas de bola/potion acabando (config na aba Alertas do dashboard; som na sidebar)
   alertConfigGet: () => ipcRenderer.invoke('alert-config-get'),
   alertConfigSet: (cfg) => ipcRenderer.invoke('alert-config-set', cfg),
+  setAlertNames: (names) => ipcRenderer.send('alert-names', names),
   onAlertSound: (cb) => ipcRenderer.on('alert-sound', (_e, d) => cb(d)),
   getProfile: () => ipcRenderer.invoke('get-profile'),
   saveProfile: (nome, discord, nick) => ipcRenderer.invoke('save-profile', nome, discord, nick),

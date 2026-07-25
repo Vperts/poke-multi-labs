@@ -474,14 +474,18 @@ ipcMain.handle('alert-config-set', (_e, cfg) => {
   if (cfg && typeof cfg === 'object') { alertCfg = Object.assign(alertCfg, cfg); try { fs.writeFileSync(ALERT_FILE, JSON.stringify(alertCfg)); } catch (e) {} }
   return alertCfg;
 });
+// nomes das contas (o dono renomeia; o main nao tem, a sidebar empurra) -> notificacao com o nome real
+let alertNames = {};
+ipcMain.on('alert-names', (_e, n) => { alertNames = (n && typeof n === 'object') ? n : {}; });
 const alertState = {};   // `${num}:${tipo}` -> { baixo, ultimoAviso } (borda + repeticao)
-function disparaAlerta (texto, sound) {
-  try { if (Notification.isSupported()) new Notification({ title: 'Vperts Multi', body: texto }).show(); } catch (e) {}
-  try { if (sidebar && !sidebar.webContents.isDestroyed()) sidebar.webContents.send('alert-sound', { sound }); } catch (e) {}
+function disparaAlerta (texto, sound, num, tipo) {
+  try { if (Notification.isSupported()) new Notification({ title: 'Vperts Multi — alerta', body: texto }).show(); } catch (e) {}
+  // manda tudo pra sidebar: toca o som E marca a conta visualmente (flash + aviso)
+  try { if (sidebar && !sidebar.webContents.isDestroyed()) sidebar.webContents.send('alert-sound', { sound, num, tipo, texto }); } catch (e) {}
 }
 function avaliaAlerta (num, tipo, baixo, texto, sound, agora, repeatMs) {
   const k = num + ':' + tipo, prev = alertState[k] || { baixo: false, ultimoAviso: 0 };
-  if (baixo && (!prev.baixo || agora - prev.ultimoAviso >= repeatMs)) { disparaAlerta(texto, sound); prev.ultimoAviso = agora; }
+  if (baixo && (!prev.baixo || agora - prev.ultimoAviso >= repeatMs)) { disparaAlerta(texto, sound, num, tipo); prev.ultimoAviso = agora; }
   prev.baixo = baixo; alertState[k] = prev;
 }
 async function checaAlertas () {
@@ -490,7 +494,7 @@ async function checaAlertas () {
   const agora = Date.now(), repeatMs = Math.max(1, alertCfg.repeatMin || 5) * 60000;
   for (const row of (r.results || [])) {
     const st = row.state; if (!st || st.ok === false) continue;
-    const nome = 'Conta ' + row.num;
+    const nome = alertNames[row.num] || ('Conta ' + row.num);
     const bq = (st.ballAtiva && st.ballAtiva.qty != null) ? st.ballAtiva.qty : (st.ballsTotal != null ? st.ballsTotal : null);
     const bn = (st.ballAtiva && st.ballAtiva.name) || 'Bola';
     if (bq != null) avaliaAlerta(row.num, 'ball', bq < (alertCfg.lowBall || 0), nome + ': ' + bn + ' acabando (' + bq + ')', alertCfg.soundBall, agora, repeatMs);
