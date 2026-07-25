@@ -168,6 +168,18 @@
   .tkf{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold))}
   .tkc.done .tkf{background:linear-gradient(90deg,#3ae07c,#1fb959)}
   .tkc.done .tkh{color:var(--faint)}
+  /* aba Alertas (config) */
+  .alrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .alrow b{color:var(--cream);font-weight:700}
+  .alrow input[type=number]{width:74px;background:#0b0706;border:1px solid var(--line);border-radius:7px;
+    color:var(--cream);padding:4px 7px;font-family:inherit;font-size:12px;font-variant-numeric:tabular-nums}
+  .alrow select{background:#0b0706;border:1px solid var(--line);border-radius:7px;color:var(--cream);
+    padding:4px 7px;font-family:inherit;font-size:12px}
+  .alu{color:var(--faint);font-size:10.5px}
+  .alsw{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);cursor:pointer}
+  .albtn{background:rgba(229,179,79,.14);border:1px solid var(--line);border-radius:8px;color:var(--gold-soft);
+    padding:4px 10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer}
+  .albtn:hover{background:rgba(229,179,79,.24);color:var(--gold)}
   .fill.low{background:linear-gradient(90deg,var(--red-2),var(--red))}
   .sec{border-top:1px dashed var(--line);padding-top:11px}
   .sech{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);
@@ -561,10 +573,60 @@
     return h
   }
 
+  // ===================== aba ALERTAS (config) =====================
+  // bip de teste no proprio dashboard (WebAudio, sem arquivo) — mesmo repertorio da sidebar
+  const _AC = window.AudioContext || window.webkitAudioContext
+  let _ac = null
+  function _tone (ctx, freq, start, dur, gain) {
+    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = freq
+    g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(gain || 0.28, start + 0.012)
+    g.gain.setValueAtTime(gain || 0.28, start + dur - 0.04); g.gain.linearRampToValueAtTime(0, start + dur)
+    o.connect(g); g.connect(ctx.destination); o.start(start); o.stop(start + dur + 0.02) }
+  function playBeep (type) {
+    try { if(!_ac) _ac = new _AC(); if(_ac.state==='suspended') _ac.resume(); const ctx=_ac, t=ctx.currentTime
+      if(type==='double'){ _tone(ctx,880,t,0.12); _tone(ctx,880,t+0.18,0.12) }
+      else if(type==='alarm'){ _tone(ctx,640,t,0.16); _tone(ctx,640,t+0.22,0.16); _tone(ctx,640,t+0.44,0.16) }
+      else if(type==='chime'){ _tone(ctx,1046,t,0.10); _tone(ctx,1318,t+0.12,0.16) }
+      else { _tone(ctx,880,t,0.20) } }catch(e){} }
+  const SONS = [['beep','Bip simples'],['double','Bip duplo'],['alarm','Alarme'],['chime','Sino']]
+  const optSom = (sel)=> SONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===sel?' selected':'')+'>'+s[1]+'</option>').join('')
+  function painelAlertas (cfg){
+    cfg = cfg || {}
+    const som = (cfg.soundBall||'beep'), somP = (cfg.soundPotion||'double')
+    return '<section class="box"><div class="bh"><span class="bt">Ligar</span>'+
+        '<label class="alsw"><input type="checkbox" id="al-on"'+(cfg.enabled?' checked':'')+'> alertas ligados</label></div>'+
+        '<div class="alrow"><span>Avisar quando <b>bola</b> abaixo de</span>'+
+          '<input type="number" id="al-ball" min="0" value="'+(cfg.lowBall!=null?cfg.lowBall:500)+'"><span class="alu">unid.</span></div>'+
+        '<div class="alrow"><span>Avisar quando <b>potion</b> abaixo de</span>'+
+          '<input type="number" id="al-pot" min="0" value="'+(cfg.lowPotion!=null?cfg.lowPotion:50)+'"><span class="alu">unid.</span></div>'+
+        '<div class="alrow"><span>Repetir o aviso a cada</span>'+
+          '<input type="number" id="al-rep" min="1" value="'+(cfg.repeatMin!=null?cfg.repeatMin:5)+'"><span class="alu">min (se continuar baixo)</span></div>'+
+      '</section>'+
+      '<section class="box"><div class="bh"><span class="bt">Som por situação</span></div>'+
+        '<div class="alrow"><span>Bola acabando</span><select id="al-sball">'+optSom(som)+'</select>'+
+          '<button class="albtn" id="al-tball">▶ testar</button></div>'+
+        '<div class="alrow"><span>Potion acabando</span><select id="al-spot">'+optSom(somP)+'</select>'+
+          '<button class="albtn" id="al-tpot">▶ testar</button></div>'+
+        '<div class="na" style="padding-top:6px">Toca o som + notificação do Windows, mesmo com o app minimizado. Diz qual conta.</div>'+
+      '</section>'
+  }
+  function wireAlertas (){
+    const salva = ()=>{
+      const cfg = { enabled: $('#al-on').checked, lowBall: parseInt($('#al-ball').value)||0,
+        lowPotion: parseInt($('#al-pot').value)||0, repeatMin: Math.max(1, parseInt($('#al-rep').value)||5),
+        soundBall: $('#al-sball').value, soundPotion: $('#al-spot').value }
+      window.ml.alertConfigSet(cfg)
+      localStorage.setItem('pml_lowball', cfg.lowBall); LOW = cfg.lowBall   // mantem o visual no mesmo numero
+    }
+    ;['al-on','al-ball','al-pot','al-rep','al-sball','al-spot'].forEach(id=>{ const el=$('#'+id); if(el) el.onchange=salva })
+    const tb=$('#al-tball'); if(tb) tb.onclick=()=>playBeep($('#al-sball').value)
+    const tp=$('#al-tpot'); if(tp) tp.onclick=()=>playBeep($('#al-spot').value)
+  }
+
   // ===================== render =====================
   function render (rows){
     ultimas = rows
-    if(sel!=='todas' && !rows.some(r=>String(r.num)===String(sel))) sel='todas'
+    if(sel!=='todas' && sel!=='alertas' && !rows.some(r=>String(r.num)===String(sel))) sel='todas'
     // navegação
     $('#nav').innerHTML = '<div class="navh">Painel</div>'+
       '<button class="navb'+(sel==='todas'?' on':'')+'" data-sel="todas"><i class="'+
@@ -574,12 +636,21 @@
       rows.map(r=>{ const a=alertOf(r.state), dex=r.state&&r.state.lider&&r.state.lider.speciesId
         return '<button class="navb'+(String(r.num)===String(sel)?' on':'')+'" data-sel="'+r.num+'">'+
           (dex?'<img src="'+spritePng(dex)+'" alt="">':'<i class="'+a.cls+'"></i>')+
-          '<span>'+esc(nameOf(r.num))+'</span></button>' }).join('')
+          '<span>'+esc(nameOf(r.num))+'</span></button>' }).join('')+
+      '<div class="navsep"></div><div class="navh">Config</div>'+
+      '<button class="navb'+(sel==='alertas'?' on':'')+'" data-sel="alertas"><i></i><span>⚙ Alertas</span></button>'
     $('#nav').querySelectorAll('.navb').forEach(b=>b.onclick=()=>{
       sel=b.dataset.sel; localStorage.setItem('pml_sel',sel); render(ultimas) })
 
     // painel
-    if(sel==='todas'){
+    if(sel==='alertas'){
+      window.ml.alertConfigGet().then(cfg=>{
+        $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>⚙ Alertas</h2>'+
+          '<p>som + notificação do Windows quando bola ou potion está acabando — funciona até minimizado</p>'+
+          '</div></div>' + painelAlertas(cfg)
+        wireAlertas()
+      })
+    } else if(sel==='todas'){
       $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>Todas as contas</h2>'+
         '<p>o essencial somado — abra uma conta na lista pra ver os detalhes</p></div>'+
         '<span class="hb b-ok">'+rows.length+(rows.length===1?' conta':' contas')+'</span></div>' + painelTodas(rows)

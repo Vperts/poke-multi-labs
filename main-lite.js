@@ -8,7 +8,7 @@
 //   - bridge automatico: vperts-ext/content.js como PRELOAD (wrap do WS)
 // NAO toca no host-main.js (app pago). Rodar: npx electron main-lite.js
 // ============================================================
-const { app, BaseWindow, WebContentsView, BrowserWindow, session, Menu, ipcMain, safeStorage } = require('electron');
+const { app, BaseWindow, WebContentsView, BrowserWindow, session, Menu, ipcMain, safeStorage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const cdp = require('./cdp.js');
@@ -325,6 +325,7 @@ app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 app.commandLine.appendSwitch('enable-gpu-rasterization');   // canvas do jogo vai pra GPU
 app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');   // o bip do alerta toca sem clique
 
 // Uma instancia so. Duas apontando pro mesmo userData brigam pelo cache e pelos cookies
 // ("Unable to move the cache: Acesso negado") e podem derrubar o login das contas.
@@ -459,6 +460,45 @@ ipcMain.handle('read-dashboard', async () => {
     .finally(() => { leituraEmVoo = null; });
   return leituraEmVoo;
 });
+
+// ================= ALERTAS de bola/potion acabando (som + notificacao do Windows) =================
+// Config editada na aba Alertas do dashboard, persistida AQUI (por isso funciona com o dashboard
+// fechado / app minimizado). O loop le bola/potion por conta (reusa lerContas), dispara na BORDA
+// (ok->baixo) e repete a cada repeatMin se continuar baixo: Notification nativa + som na sidebar.
+app.setAppUserModelId('com.vperslab.vpertsmultilite');   // pra a Notification do Windows aparecer certa
+const ALERT_FILE = path.join(app.getPath('userData'), 'alertas.json');
+let alertCfg = { enabled: false, lowBall: 500, lowPotion: 50, soundBall: 'beep', soundPotion: 'double', repeatMin: 5 };
+try { Object.assign(alertCfg, JSON.parse(fs.readFileSync(ALERT_FILE, 'utf8'))); } catch (e) {}
+ipcMain.handle('alert-config-get', () => alertCfg);
+ipcMain.handle('alert-config-set', (_e, cfg) => {
+  if (cfg && typeof cfg === 'object') { alertCfg = Object.assign(alertCfg, cfg); try { fs.writeFileSync(ALERT_FILE, JSON.stringify(alertCfg)); } catch (e) {} }
+  return alertCfg;
+});
+const alertState = {};   // `${num}:${tipo}` -> { baixo, ultimoAviso } (borda + repeticao)
+function disparaAlerta (texto, sound) {
+  try { if (Notification.isSupported()) new Notification({ title: 'Vperts Multi', body: texto }).show(); } catch (e) {}
+  try { if (sidebar && !sidebar.webContents.isDestroyed()) sidebar.webContents.send('alert-sound', { sound }); } catch (e) {}
+}
+function avaliaAlerta (num, tipo, baixo, texto, sound, agora, repeatMs) {
+  const k = num + ':' + tipo, prev = alertState[k] || { baixo: false, ultimoAviso: 0 };
+  if (baixo && (!prev.baixo || agora - prev.ultimoAviso >= repeatMs)) { disparaAlerta(texto, sound); prev.ultimoAviso = agora; }
+  prev.baixo = baixo; alertState[k] = prev;
+}
+async function checaAlertas () {
+  if (!alertCfg.enabled || !slots.length) return;
+  let r; try { r = await lerContas(); } catch (e) { return; }
+  const agora = Date.now(), repeatMs = Math.max(1, alertCfg.repeatMin || 5) * 60000;
+  for (const row of (r.results || [])) {
+    const st = row.state; if (!st || st.ok === false) continue;
+    const nome = 'Conta ' + row.num;
+    const bq = (st.ballAtiva && st.ballAtiva.qty != null) ? st.ballAtiva.qty : (st.ballsTotal != null ? st.ballsTotal : null);
+    const bn = (st.ballAtiva && st.ballAtiva.name) || 'Bola';
+    if (bq != null) avaliaAlerta(row.num, 'ball', bq < (alertCfg.lowBall || 0), nome + ': ' + bn + ' acabando (' + bq + ')', alertCfg.soundBall, agora, repeatMs);
+    if (st.potions != null) avaliaAlerta(row.num, 'potion', st.potions < (alertCfg.lowPotion || 0), nome + ': potions acabando (' + st.potions + ')', alertCfg.soundPotion, agora, repeatMs);
+  }
+}
+setInterval(checaAlertas, 7000);
+
 // ---- leitura LEVE do HP/XP do lider (loop rapido do card, 250ms) ----
 // O read-dashboard roda o STATE_EXPR inteiro (pesado) e e' cacheado 800ms — bom pro card todo,
 // mas lento demais pra barra de HP acompanhar a batalha. Este le SO os campos crus do lider do

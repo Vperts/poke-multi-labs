@@ -407,6 +407,29 @@
     setTimeout(() => { ab.disabled = false; ab.textContent = t }, 3000)
   }
 
+  // ---- ALERTA sonoro (bip) — o main dispara 'alert-sound' quando bola/potion cruza o limite.
+  // A sidebar esta sempre viva, entao o som toca mesmo com o app minimizado. WebAudio, sem arquivo.
+  const _AC = window.AudioContext || window.webkitAudioContext
+  let _ac = null
+  function _ctx () { if (!_ac) _ac = new _AC(); if (_ac.state === 'suspended') _ac.resume(); return _ac }
+  function _tone (ctx, freq, start, dur, gain) {
+    const o = ctx.createOscillator(), g = ctx.createGain()
+    o.type = 'sine'; o.frequency.value = freq
+    g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(gain || 0.28, start + 0.012)
+    g.gain.setValueAtTime(gain || 0.28, start + dur - 0.04); g.gain.linearRampToValueAtTime(0, start + dur)
+    o.connect(g); g.connect(ctx.destination); o.start(start); o.stop(start + dur + 0.02)
+  }
+  function playBeep (type) {
+    try {
+      const ctx = _ctx(), t = ctx.currentTime
+      if (type === 'double') { _tone(ctx, 880, t, 0.12); _tone(ctx, 880, t + 0.18, 0.12) }
+      else if (type === 'alarm') { _tone(ctx, 640, t, 0.16); _tone(ctx, 640, t + 0.22, 0.16); _tone(ctx, 640, t + 0.44, 0.16) }
+      else if (type === 'chime') { _tone(ctx, 1046, t, 0.10); _tone(ctx, 1318, t + 0.12, 0.16) }
+      else { _tone(ctx, 880, t, 0.20) }   // 'beep' (padrao)
+    } catch (e) {}
+  }
+  window.playBeep = playBeep   // usado tambem pelo botao "testar" (nao ha teste aqui, mas fica exposto)
+  if (window.ml.onAlertSound) window.ml.onAlertSound(function (d) { playBeep(d && d.sound) })
 </script>
 </body>
 </html>

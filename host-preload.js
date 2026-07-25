@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('ml', {
   dashboardResize: (w, h) => ipcRenderer.invoke('dashboard-resize', w, h),
   checkUpdate: () => ipcRenderer.invoke('check-update'),
   applyUpdate: () => ipcRenderer.invoke('apply-update'),
+  // alertas de bola/potion acabando (config na aba Alertas do dashboard; som na sidebar)
+  alertConfigGet: () => ipcRenderer.invoke('alert-config-get'),
+  alertConfigSet: (cfg) => ipcRenderer.invoke('alert-config-set', cfg),
+  onAlertSound: (cb) => ipcRenderer.on('alert-sound', (_e, d) => cb(d)),
   getProfile: () => ipcRenderer.invoke('get-profile'),
   saveProfile: (nome, discord, nick) => ipcRenderer.invoke('save-profile', nome, discord, nick),
   checkAdmin: () => ipcRenderer.invoke('check-admin'),
