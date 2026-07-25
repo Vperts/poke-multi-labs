@@ -168,18 +168,29 @@
   .tkf{height:100%;background:linear-gradient(90deg,var(--gold-soft),var(--gold))}
   .tkc.done .tkf{background:linear-gradient(90deg,#3ae07c,#1fb959)}
   .tkc.done .tkh{color:var(--faint)}
-  /* aba Alertas (config) */
-  .alrow{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
-  .alrow b{color:var(--cream);font-weight:700}
-  .alrow input[type=number]{width:74px;background:#0b0706;border:1px solid var(--line);border-radius:7px;
-    color:var(--cream);padding:4px 7px;font-family:inherit;font-size:12px;font-variant-numeric:tabular-nums}
-  .alrow select{background:#0b0706;border:1px solid var(--line);border-radius:7px;color:var(--cream);
-    padding:4px 7px;font-family:inherit;font-size:12px}
-  .alu{color:var(--faint);font-size:10.5px}
-  .alsw{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);cursor:pointer}
-  .albtn{background:rgba(229,179,79,.14);border:1px solid var(--line);border-radius:8px;color:var(--gold-soft);
-    padding:4px 10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer}
-  .albtn:hover{background:rgba(229,179,79,.24);color:var(--gold)}
+  /* aba Alertas (config) — fontes/inputs GRANDES, faceis de usar */
+  .alfield{padding:12px 0;border-top:1px solid var(--line)}
+  .alfield:first-child{border-top:0;padding-top:2px}
+  .alflabel{font-size:14.5px;color:var(--cream);font-weight:600;margin-bottom:9px;line-height:1.3}
+  .alflabel b{color:var(--gold);font-weight:800}
+  .alnum{display:flex;align-items:center;gap:9px}
+  .alnum input[type=number]{width:120px;text-align:center;background:#0b0706;border:1px solid var(--line);
+    border-radius:11px;color:var(--cream);padding:10px 8px;font-family:inherit;font-size:20px;font-weight:800;
+    font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+  .alnum input[type=number]::-webkit-inner-spin-button,
+  .alnum input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+  .alstep{width:44px;height:44px;flex:none;border-radius:11px;border:1px solid var(--line);
+    background:rgba(255,255,255,.05);color:var(--gold-soft);font-size:24px;font-weight:800;cursor:pointer;line-height:1}
+  .alstep:hover{background:rgba(229,179,79,.2);color:var(--gold)}
+  .alstep:active{transform:scale(.93)}
+  .alsel{flex:1;min-width:0;background:#0b0706;border:1px solid var(--line);border-radius:11px;color:var(--cream);
+    padding:10px 12px;font-family:inherit;font-size:15.5px;font-weight:600;cursor:pointer}
+  .alu{font-size:13.5px;color:var(--muted);font-weight:600}
+  .alsw{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--muted);cursor:pointer;font-weight:600}
+  .alsw input{width:17px;height:17px;accent-color:var(--gold)}
+  .albtn{background:rgba(229,179,79,.16);border:1px solid var(--line);border-radius:11px;color:var(--gold-soft);
+    padding:10px 18px;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .albtn:hover{background:rgba(229,179,79,.26);color:var(--gold)}
   .fill.low{background:linear-gradient(90deg,var(--red-2),var(--red))}
   .sec{border-top:1px dashed var(--line);padding-top:11px}
   .sech{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);
@@ -253,7 +264,6 @@
   </div>
   <div class="ft">
     <label><input type="checkbox" id="auto" checked /> auto (4s)</label>
-    <label>avisar &lt; <input type="number" id="lowball" value="500"> bolas</label>
     <span class="stamp" id="stamp"></span>
   </div>
   <div class="rgrip" id="rgrip" title="Arraste pra redimensionar"></div>
@@ -574,40 +584,54 @@
   }
 
   // ===================== aba ALERTAS (config) =====================
-  // bip de teste no proprio dashboard (WebAudio, sem arquivo) — mesmo repertorio da sidebar
+  // bip de teste no proprio dashboard (WebAudio, sem arquivo) — MESMO repertorio da sidebar (host-toolbar.html)
   const _AC = window.AudioContext || window.webkitAudioContext
   let _ac = null
-  function _tone (ctx, freq, start, dur, gain) {
-    const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.value = freq
+  function _tone (c, freq, start, dur, gain, wave) {
+    const o = c.createOscillator(), g = c.createGain(); o.type = wave || 'sine'; o.frequency.value = freq
     g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(gain || 0.28, start + 0.012)
     g.gain.setValueAtTime(gain || 0.28, start + dur - 0.04); g.gain.linearRampToValueAtTime(0, start + dur)
-    o.connect(g); g.connect(ctx.destination); o.start(start); o.stop(start + dur + 0.02) }
+    o.connect(g); g.connect(c.destination); o.start(start); o.stop(start + dur + 0.02); return o }
   function playBeep (type) {
-    try { if(!_ac) _ac = new _AC(); if(_ac.state==='suspended') _ac.resume(); const ctx=_ac, t=ctx.currentTime
-      if(type==='double'){ _tone(ctx,880,t,0.12); _tone(ctx,880,t+0.18,0.12) }
-      else if(type==='alarm'){ _tone(ctx,640,t,0.16); _tone(ctx,640,t+0.22,0.16); _tone(ctx,640,t+0.44,0.16) }
-      else if(type==='chime'){ _tone(ctx,1046,t,0.10); _tone(ctx,1318,t+0.12,0.16) }
-      else { _tone(ctx,880,t,0.20) } }catch(e){} }
-  const SONS = [['beep','Bip simples'],['double','Bip duplo'],['alarm','Alarme'],['chime','Sino']]
+    try {
+      if (!_ac) _ac = new _AC(); if (_ac.state === 'suspended') _ac.resume(); const c = _ac, t = c.currentTime
+      switch (type) {
+        case 'double': _tone(c,880,t,0.12); _tone(c,880,t+0.18,0.12); break
+        case 'triple': _tone(c,880,t,0.09); _tone(c,880,t+0.14,0.09); _tone(c,880,t+0.28,0.09); break
+        case 'alarm': _tone(c,640,t,0.16); _tone(c,640,t+0.22,0.16); _tone(c,640,t+0.44,0.16); break
+        case 'chime': _tone(c,1046,t,0.10); _tone(c,1318,t+0.12,0.18); break
+        case 'ping': _tone(c,1568,t,0.13); break
+        case 'buzz': _tone(c,220,t,0.35,0.22,'square'); break
+        case 'siren': { const o=_tone(c,600,t,0.7,0.24); try{o.frequency.setValueAtTime(500,t);o.frequency.linearRampToValueAtTime(950,t+0.35);o.frequency.linearRampToValueAtTime(500,t+0.7)}catch(e){} break }
+        default: _tone(c,880,t,0.20)   // 'beep'
+      }
+    } catch (e) {}
+  }
+  const SONS = [['beep','Bip simples'],['double','Bip duplo'],['triple','Bip triplo'],['alarm','Alarme'],['siren','Sirene'],['chime','Sino'],['ping','Ping agudo'],['buzz','Grave']]
   const optSom = (sel)=> SONS.map(s=>'<option value="'+s[0]+'"'+(s[0]===sel?' selected':'')+'>'+s[1]+'</option>').join('')
+  function fieldNum (label, id, val, step, unit){
+    return '<div class="alfield"><div class="alflabel">'+label+'</div><div class="alnum">'+
+      '<button class="alstep" data-for="'+id+'" data-d="-1">−</button>'+
+      '<input type="number" id="'+id+'" min="'+(id==='al-rep'?1:0)+'" step="'+step+'" value="'+val+'">'+
+      '<button class="alstep" data-for="'+id+'" data-d="1">+</button>'+
+      (unit?'<span class="alu">'+unit+'</span>':'')+'</div></div>'
+  }
   function painelAlertas (cfg){
     cfg = cfg || {}
-    const som = (cfg.soundBall||'beep'), somP = (cfg.soundPotion||'double')
-    return '<section class="box"><div class="bh"><span class="bt">Ligar</span>'+
-        '<label class="alsw"><input type="checkbox" id="al-on"'+(cfg.enabled?' checked':'')+'> alertas ligados</label></div>'+
-        '<div class="alrow"><span>Avisar quando <b>bola</b> abaixo de</span>'+
-          '<input type="number" id="al-ball" min="0" value="'+(cfg.lowBall!=null?cfg.lowBall:500)+'"><span class="alu">unid.</span></div>'+
-        '<div class="alrow"><span>Avisar quando <b>potion</b> abaixo de</span>'+
-          '<input type="number" id="al-pot" min="0" value="'+(cfg.lowPotion!=null?cfg.lowPotion:50)+'"><span class="alu">unid.</span></div>'+
-        '<div class="alrow"><span>Repetir o aviso a cada</span>'+
-          '<input type="number" id="al-rep" min="1" value="'+(cfg.repeatMin!=null?cfg.repeatMin:5)+'"><span class="alu">min (se continuar baixo)</span></div>'+
+    return '<section class="box"><div class="bh"><span class="bt">Alertas de estoque</span>'+
+        '<label class="alsw"><input type="checkbox" id="al-on"'+(cfg.enabled?' checked':'')+'> ligados</label></div>'+
+        fieldNum('Avisar quando <b>bola</b> ficar abaixo de:', 'al-ball', (cfg.lowBall!=null?cfg.lowBall:500), 50, 'unid.')+
+        fieldNum('Avisar quando <b>potion</b> ficar abaixo de:', 'al-pot', (cfg.lowPotion!=null?cfg.lowPotion:50), 10, 'unid.')+
+        fieldNum('Repetir o aviso a cada:', 'al-rep', (cfg.repeatMin!=null?cfg.repeatMin:5), 1, 'min (se continuar baixo)')+
       '</section>'+
       '<section class="box"><div class="bh"><span class="bt">Som por situação</span></div>'+
-        '<div class="alrow"><span>Bola acabando</span><select id="al-sball">'+optSom(som)+'</select>'+
-          '<button class="albtn" id="al-tball">▶ testar</button></div>'+
-        '<div class="alrow"><span>Potion acabando</span><select id="al-spot">'+optSom(somP)+'</select>'+
-          '<button class="albtn" id="al-tpot">▶ testar</button></div>'+
-        '<div class="na" style="padding-top:6px">Toca o som + notificação do Windows, mesmo com o app minimizado. Diz qual conta.</div>'+
+        '<div class="alfield"><div class="alflabel">Bola acabando</div><div class="alnum">'+
+          '<select class="alsel" id="al-sball">'+optSom(cfg.soundBall||'beep')+'</select>'+
+          '<button class="albtn" id="al-tball">▶ testar</button></div></div>'+
+        '<div class="alfield"><div class="alflabel">Potion acabando</div><div class="alnum">'+
+          '<select class="alsel" id="al-spot">'+optSom(cfg.soundPotion||'double')+'</select>'+
+          '<button class="albtn" id="al-tpot">▶ testar</button></div></div>'+
+        '<div class="na" style="font-size:12.5px;padding-top:8px">Toca o som + notificação do Windows dizendo qual conta — mesmo com o app minimizado.</div>'+
       '</section>'
   }
   function wireAlertas (){
@@ -619,6 +643,12 @@
       localStorage.setItem('pml_lowball', cfg.lowBall); LOW = cfg.lowBall   // mantem o visual no mesmo numero
     }
     ;['al-on','al-ball','al-pot','al-rep','al-sball','al-spot'].forEach(id=>{ const el=$('#'+id); if(el) el.onchange=salva })
+    // botoes − / + : mexem no input pelo passo e salvam (facil de ajustar sem digitar)
+    document.querySelectorAll('.alstep').forEach(b=> b.onclick=()=>{
+      const inp = document.getElementById(b.dataset.for); if(!inp) return
+      const step = parseInt(inp.step)||1, min = parseInt(inp.min)||0
+      inp.value = Math.max(min, (parseInt(inp.value)||0) + (parseInt(b.dataset.d)||0)*step); salva()
+    })
     const tb=$('#al-tball'); if(tb) tb.onclick=()=>playBeep($('#al-sball').value)
     const tp=$('#al-tpot'); if(tp) tp.onclick=()=>playBeep($('#al-spot').value)
   }
@@ -698,7 +728,6 @@
   $('#x').onclick=()=>window.close()
   let pinned=false
   $('#pin').onclick=()=>{ pinned=!pinned; window.ml.dashboardPin(pinned); $('#pin').classList.toggle('on',pinned) }
-  const lb=$('#lowball'); lb.value=LOW; lb.addEventListener('input',()=>{ LOW=parseInt(lb.value)||0; localStorage.setItem('pml_lowball',LOW); refresh() })
   $('#rgrip').addEventListener('mousedown',(e)=>{ e.preventDefault()
     const sx=e.screenX, sy=e.screenY, sw=window.outerWidth, sh=window.outerHeight
     const mv=(ev)=>window.ml.dashboardResize(sw+(ev.screenX-sx), sh+(ev.screenY-sy))

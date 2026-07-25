@@ -411,21 +411,25 @@
   // A sidebar esta sempre viva, entao o som toca mesmo com o app minimizado. WebAudio, sem arquivo.
   const _AC = window.AudioContext || window.webkitAudioContext
   let _ac = null
-  function _ctx () { if (!_ac) _ac = new _AC(); if (_ac.state === 'suspended') _ac.resume(); return _ac }
-  function _tone (ctx, freq, start, dur, gain) {
-    const o = ctx.createOscillator(), g = ctx.createGain()
-    o.type = 'sine'; o.frequency.value = freq
+  function _tone (c, freq, start, dur, gain, wave) {
+    const o = c.createOscillator(), g = c.createGain(); o.type = wave || 'sine'; o.frequency.value = freq
     g.gain.setValueAtTime(0, start); g.gain.linearRampToValueAtTime(gain || 0.28, start + 0.012)
     g.gain.setValueAtTime(gain || 0.28, start + dur - 0.04); g.gain.linearRampToValueAtTime(0, start + dur)
-    o.connect(g); g.connect(ctx.destination); o.start(start); o.stop(start + dur + 0.02)
+    o.connect(g); g.connect(c.destination); o.start(start); o.stop(start + dur + 0.02); return o
   }
   function playBeep (type) {
     try {
-      const ctx = _ctx(), t = ctx.currentTime
-      if (type === 'double') { _tone(ctx, 880, t, 0.12); _tone(ctx, 880, t + 0.18, 0.12) }
-      else if (type === 'alarm') { _tone(ctx, 640, t, 0.16); _tone(ctx, 640, t + 0.22, 0.16); _tone(ctx, 640, t + 0.44, 0.16) }
-      else if (type === 'chime') { _tone(ctx, 1046, t, 0.10); _tone(ctx, 1318, t + 0.12, 0.16) }
-      else { _tone(ctx, 880, t, 0.20) }   // 'beep' (padrao)
+      if (!_ac) _ac = new _AC(); if (_ac.state === 'suspended') _ac.resume(); const c = _ac, t = c.currentTime
+      switch (type) {
+        case 'double': _tone(c,880,t,0.12); _tone(c,880,t+0.18,0.12); break
+        case 'triple': _tone(c,880,t,0.09); _tone(c,880,t+0.14,0.09); _tone(c,880,t+0.28,0.09); break
+        case 'alarm': _tone(c,640,t,0.16); _tone(c,640,t+0.22,0.16); _tone(c,640,t+0.44,0.16); break
+        case 'chime': _tone(c,1046,t,0.10); _tone(c,1318,t+0.12,0.18); break
+        case 'ping': _tone(c,1568,t,0.13); break
+        case 'buzz': _tone(c,220,t,0.35,0.22,'square'); break
+        case 'siren': { const o=_tone(c,600,t,0.7,0.24); try{o.frequency.setValueAtTime(500,t);o.frequency.linearRampToValueAtTime(950,t+0.35);o.frequency.linearRampToValueAtTime(500,t+0.7)}catch(e){} break }
+        default: _tone(c,880,t,0.20)   // 'beep'
+      }
     } catch (e) {}
   }
   window.playBeep = playBeep   // usado tambem pelo botao "testar" (nao ha teste aqui, mas fica exposto)
