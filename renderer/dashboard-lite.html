@@ -674,12 +674,17 @@
 
     // painel
     if(sel==='alertas'){
-      window.ml.alertConfigGet().then(cfg=>{
-        $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>⚙ Alertas</h2>'+
-          '<p>som + notificação do Windows quando bola ou potion está acabando — funciona até minimizado</p>'+
-          '</div></div>' + painelAlertas(cfg)
-        wireAlertas()
-      })
+      // monta a aba SO 1x: se o refresh de 4s redesenhasse o form, apagava o que o dono digita
+      // no meio (nao dava pra completar o numero). Ja montado (#al-ball existe) -> nao mexe.
+      if(!document.getElementById('al-ball')){
+        window.ml.alertConfigGet().then(cfg=>{
+          if(sel!=='alertas' || document.getElementById('al-ball')) return
+          $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>⚙ Alertas</h2>'+
+            '<p>som + notificação do Windows quando bola ou potion está acabando — funciona até minimizado</p>'+
+            '</div></div>' + painelAlertas(cfg)
+          wireAlertas()
+        })
+      }
     } else if(sel==='todas'){
       $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>Todas as contas</h2>'+
         '<p>o essencial somado — abra uma conta na lista pra ver os detalhes</p></div>'+
