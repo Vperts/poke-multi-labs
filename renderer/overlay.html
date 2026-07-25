@@ -125,6 +125,7 @@
     font-variant-numeric:tabular-nums;letter-spacing:-.01em;
     white-space:nowrap;text-shadow:0 2px 8px rgba(0,0,0,.8)}
   .r.zero .v{color:var(--bad)} .r.warn .v{color:var(--mid)}
+  .r.baixo .v{color:var(--bad)}   /* abaixo do limite de alerta -> valor em VERMELHO (identifica na hora) */
   .v.pos{color:var(--good)} .v.neg{color:var(--bad)}
   /* separador das linhas com dois numeros (Derrotados = kills/capturas, Shiny = shinies/capturas):
      barra faint entre os dois valores tabulares, so pra nao grudarem. Nao muda a cor dos numeros. */
@@ -241,7 +242,13 @@
   const POKE = GAME+'/assets/markitems/pokeball.png'
   const BACK = { potion: GAME+'/assets/markitems/ultra_potion.png', revive: GAME+'/assets/markitems/revive.png' }
   const nameOf = (n)=>{ try{ return (JSON.parse(localStorage.getItem('pml_names')||'{}'))[n] || ('Conta '+n) }catch{ return 'Conta '+n } }
-  const lowBall = ()=>parseInt(localStorage.getItem('pml_lowball')||'500')||500
+  // limites vem da config de Alertas do MAIN (a mesma do alerta sonoro) -> card sempre em sincronia
+  // com a aba, sem depender de localStorage compartilhado. Fallback pro localStorage/padrao.
+  let _alcfg = null
+  function fetchAlertCfg(){ try{ if(window.ml&&window.ml.alertConfigGet) window.ml.alertConfigGet().then(c=>{ if(c) _alcfg=c }) }catch(e){} }
+  fetchAlertCfg(); setInterval(fetchAlertCfg, 4000)
+  const lowBall = ()=> (_alcfg&&_alcfg.lowBall!=null)?_alcfg.lowBall:(parseInt(localStorage.getItem('pml_lowball')||'500')||500)
+  const lowPotion = ()=> (_alcfg&&_alcfg.lowPotion!=null)?_alcfg.lowPotion:(parseInt(localStorage.getItem('pml_lowpotion')||'50')||50)
   // Faixas de qualidade: as MESMAS do dashboard e da tabela oficial (pokepedia /systems/quality).
   const TIERS = ['Fraca','Comum','Incomum','Rara','Épica','Lendária','Mítica','Anciã','Divina']
   const TCOL = { 'Fraca':'#8a8f97','Comum':'#c9c9c9','Incomum':'#5fd38a','Rara':'#5b9be6','Épica':'#b07bd8',
@@ -348,7 +355,7 @@
     const lista = Array.isArray(st.ballList) ? st.ballList : null
     if(!lista || !lista.length)   // sem catalogo do WS: cai no comportamento antigo
       return linha(iconePadrao,'Pokébola',fmt(st.ballsTotal||0),
-        st.ballsTotal===0?'zero':(st.ballsTotal<lowBall()?'warn':''),'ball')
+        st.ballsTotal===0?'zero':(st.ballsTotal<lowBall()?'baixo':''),'ball')
     const ativa = st.ballAtiva || lista[0]
     // UMA LINHA POR TIPO, todas iguais as demais do card (mesma fonte, mesmo tamanho, mesmo
     // icone do proprio jogo). A primeira versao encolhia e apagava as "outras" numa linha
@@ -358,7 +365,7 @@
     return lista.filter(b=>b===ativa||(b.qty||0)>0)
       .sort((a,b)=> (a===ativa?-1:b===ativa?1:(b.qty||0)-(a.qty||0)))
       .map(b=>{
-        const cls = b!==ativa ? '' : ((b.qty||0)===0 ? 'zero' : ((b.qty||0)<lowBall() ? 'warn' : ''))
+        const cls = b!==ativa ? '' : ((b.qty||0)===0 ? 'zero' : ((b.qty||0)<lowBall() ? 'baixo' : ''))
         return linha(b.icon||iconePadrao, esc(b.name||'Pokébola'), fmt(b.qty||0), cls, 'ball')
       }).join('')
   }
@@ -518,7 +525,7 @@
       barsHtml+
       '<div class="rows">'+
       linhaBolas(st, bola)+
-      linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':'')+
+      linha(pot,'Potion',st.potions!=null?fmt(st.potions):'—', st.potions===0?'zero':(st.potions<lowPotion()?'baixo':''))+
       linha(rev,'Revive',st.revives!=null?fmt(st.revives):'—', st.revives===0?'zero':'')+
       linha('⚔','Derrotados',kills!=null?par(kills,caught):'—')+
       linha('✨','Shiny',par(shinyApp,shinyCap))+

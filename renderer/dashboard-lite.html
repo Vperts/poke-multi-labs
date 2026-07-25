@@ -640,7 +640,7 @@
         lowPotion: parseInt($('#al-pot').value)||0, repeatMin: Math.max(1, parseInt($('#al-rep').value)||5),
         soundBall: $('#al-sball').value, soundPotion: $('#al-spot').value }
       window.ml.alertConfigSet(cfg)
-      localStorage.setItem('pml_lowball', cfg.lowBall); LOW = cfg.lowBall   // mantem o visual no mesmo numero
+      localStorage.setItem('pml_lowball', cfg.lowBall); localStorage.setItem('pml_lowpotion', cfg.lowPotion); LOW = cfg.lowBall   // o card usa os mesmos limites
     }
     ;['al-on','al-ball','al-pot','al-rep','al-sball','al-spot'].forEach(id=>{ const el=$('#'+id); if(el) el.onchange=salva })
     // botoes − / + : mexem no input pelo passo e salvam (facil de ajustar sem digitar)
