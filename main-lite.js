@@ -13,13 +13,24 @@ const path = require('path');
 const fs = require('fs');
 const cdp = require('./cdp.js');
 process.on('uncaughtException', (e) => console.error('[lite] FATAL', e && e.stack || e));
+// ---- CANAL: "oficial" (o app de jogar) x "teste" (bancada) ----
+// Os dois instalam LADO A LADO e podem estar rodando AO MESMO TEMPO, entao todo recurso
+// EXCLUSIVO do processo precisa diferir, senao um derruba o outro:
+//  - userData: duas instancias no mesmo perfil brigam pelo cache ("Unable to move the cache:
+//    Acesso negado") e isso ja derrubou login de conta aqui;
+//  - porta de debug: a 2a instancia nao consegue abrir uma porta ja em uso, e o coletor
+//    externo (_coleta/coletor.js) acabaria lendo as contas do app errado.
+// O canal vem do `name` do pacote (extraMetadata.name no electron-builder-teste.yml). Em dev
+// da pra forcar com PMLABS_CANAL=teste.
+const CANAL_TESTE = /teste/i.test(app.getName()) || /^teste$/i.test(process.env.PMLABS_CANAL || '');
+const APP_LABEL = CANAL_TESTE ? 'Vperts Multi (TESTE)' : 'Vperts Multi';
 // pasta de dados propria (isola cache/login; evita colisao com outros Electron)
-app.setPath('userData', path.join(app.getPath('appData'), 'VpertsMultiLite'));
+app.setPath('userData', path.join(app.getPath('appData'), CANAL_TESTE ? 'VpertsMultiLiteTeste' : 'VpertsMultiLite'));
 // PORTA DE DEBUG (so 127.0.0.1). O modo Leve roda o jogo dentro do proprio Electron, entao
 // nao existia porta nenhuma — e o coletor de conferencia (_coleta/coletor.js), que compara o
 // nosso card com o Hunt Analyzer do jogo, ficava logando "app fechado" pra sempre, calado.
 // Mesma porta base do host (9333) pra a ferramenta achar nos dois modos.
-app.commandLine.appendSwitch('remote-debugging-port', '9333');
+app.commandLine.appendSwitch('remote-debugging-port', CANAL_TESTE ? '9433' : '9333');
 app.commandLine.appendSwitch('remote-allow-origins', '*');
 
 const GAME = 'https://poke.idleworld.online';
@@ -275,7 +286,10 @@ function emitState () { if (sidebar && !sidebar.webContents.isDestroyed()) sideb
 
 function buildChrome () {
   titlebar = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'lite-titlebar-preload.js') } });
-  titlebar.webContents.loadFile(path.join(__dirname, 'renderer', 'lite-titlebar.html'));
+  // ?teste=1 pinta a marca da barra de TESTE — com os dois apps abertos lado a lado, o unico
+  // jeito de saber em qual voce esta olhando e' na propria janela.
+  titlebar.webContents.loadFile(path.join(__dirname, 'renderer', 'lite-titlebar.html'),
+    CANAL_TESTE ? { search: '?teste=1' } : undefined);
   win.contentView.addChildView(titlebar);
   attachShortcuts(titlebar.webContents);
 
@@ -368,7 +382,7 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   loadSessions();               // antes de abrir as contas: decide /play vs /login
   win = new BaseWindow({ width: 1720, height: 1000, minWidth: 940, minHeight: 620,
-    frame: false, backgroundColor: BORDER_COLOR, title: 'Vperts Multi',
+    frame: false, backgroundColor: BORDER_COLOR, title: APP_LABEL,
     // sem isto a janela (frameless) aparecia com o icone generico do Electron (atomo) na barra
     // de tarefas, mesmo com o exe/atalho ja usando o logo Vperts. O icone da JANELA e' o que o
     // Windows mostra na taskbar em runtime — tem que ser setado explicitamente aqui.
@@ -600,8 +614,14 @@ function cmpVer (a, b) {
   for (let i = 0; i < 3; i++) { if ((pa[i] || 0) > (pb[i] || 0)) return 1; if ((pa[i] || 0) < (pb[i] || 0)) return -1; }
   return 0;
 }
+// BLINDAGEM DO CANAL: o app de TESTE nunca atualiza. Ele e' buildado sem `publish`, e nesse caso
+// o electron-builder INFERE o repositorio do remote git — ou seja, o botao Atualizar de um build
+// de teste tentaria baixar a release OFICIAL (ja saiu app-update.yml apontando pro repo antigo por
+// causa disso). Resultado seria o pior dos mundos: a bancada virando o app de jogar sozinha.
+// Aqui o caminho morre antes de sair da maquina.
 ipcMain.handle('check-update', async () => {
   const cur = app.getVersion();
+  if (CANAL_TESTE) return { ok: false, canal: 'teste', current: cur, error: 'Canal de TESTE nao atualiza — use o app oficial.' };
   if (!app.isPackaged) return { ok: true, current: cur, latest: cur, hasUpdate: false, packaged: false };
   try {
     const r = await autoUpdater.checkForUpdates();
@@ -610,6 +630,7 @@ ipcMain.handle('check-update', async () => {
   } catch (e) { return { ok: false, error: e && e.message }; }
 });
 ipcMain.handle('apply-update', async () => {
+  if (CANAL_TESTE) return { ok: false, canal: 'teste', error: 'Canal de TESTE nao atualiza — use o app oficial.' };
   if (!app.isPackaged) return { ok: false, error: 'dev' };
   try {
     await autoUpdater.downloadUpdate();

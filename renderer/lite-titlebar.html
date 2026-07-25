@@ -35,7 +35,17 @@
 </head>
 <body>
   <div class="tb">
-    <span class="brand">Vperts Multi</span>
+    <span class="brand" id="brand">Vperts Multi</span>
+    <script>
+      // canal de TESTE (?teste=1, vindo do main): marca a barra pra nao confundir com o app
+      // oficial, que pode estar aberto ao lado.
+      if (/[?&]teste=1/.test(location.search)) {
+        var b = document.getElementById('brand');
+        b.textContent = 'Vperts Multi · TESTE';
+        b.style.color = '#e5b34f';
+        document.body.style.borderTop = '2px solid #e5b34f';
+      }
+    </script>
     <button class="eco" id="eco" title="Economiza CPU: 30fps na tela em que voce esta mexendo, 15fps nas outras (OFF = 60/30)">🔋 Eco: ON</button>
     <button class="fps off" id="fps" title="Mostrar FPS no canto de cada tela">📈 FPS: OFF</button>
     <button class="stats off" id="stats" title="Modo estatísticas: jogos ao fundo (1fps) + stats na tela toda">📊 Stats: OFF</button>

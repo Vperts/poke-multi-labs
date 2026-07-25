@@ -676,10 +676,23 @@
           // stats/tipos/xp/power vem no roster (descoberto 23/07) — servem pro card e pro futuro
           // painel "Avaliar IV" do dashboard. HP/level daqui e' so o valor de LOGIN; o ao vivo
           // vem de `field`/`poke-xp` (heroHp/liderLevel), que tem prioridade na hora de exibir.
+          // TROCOU o pokemon lider? (id do roster e' o do individuo, nao da especie)
+          const trocouLider = !!(lead && lead.id != null && V.lider && V.lider.id != null && V.lider.id !== lead.id);
           if (lead) V.lider = { name: lead.name, speciesId: lead.speciesId, level: lead.level,
             shiny: !!lead.shiny, hp: lead.hp, maxHp: lead.maxHp, quality: lead.quality, ivTotal: lead.ivTotal,
             xp: lead.xp, power: lead.power, type1: lead.type1, type2: lead.type2, stats: lead.stats,
             sellValue: lead.sellValue, id: lead.id };
+          // BUG (print 25/07/2026): trocar de lider mostrava o nome NOVO com o nivel/HP do ANTIGO
+          // — "Paras nv 334" com o Paras nv 1 (24/24) no jogo. Causa: heroHp/liderLevel/liderXp so
+          // mudam por EVENTO (`field` ~3,5x/s e `poke-xp` a cada kill), entao ficavam com o valor
+          // do pokemon anterior ate o novo lutar. O `pokes` e' o unico ponto que sabe da troca:
+          // reancora tudo no roster do lider NOVO. (xpThresholds NAO zera: a curva e' por nivel,
+          // aprendida globalmente — se um dia se provar que e' por pokemon, zerar aqui.)
+          if (trocouLider) {
+            V.liderLevel = lead.level; V.liderXp = lead.xp;
+            V.heroHp = lead.hp; V.heroMaxHp = lead.maxHp; V.heroFainted = false;
+            salvaHero();
+          }
           // semente do xp/level ao vivo, caso o poke-xp ainda nao tenha chegado
           if (lead && V.liderXp == null) V.liderXp = lead.xp;
           if (lead && V.liderLevel == null) V.liderLevel = lead.level;

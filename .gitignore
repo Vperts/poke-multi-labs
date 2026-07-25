@@ -10,3 +10,7 @@ _coleta/
 # canvas/atlas). Ficam no DISCO e o app usa normalmente; NAO vao pro repo publico. Backup em
 # C:\dev\pokemon\sprites-backup-vperts-2026-07-23.zip. Regenerar via renderer/sprites/LEIA.md.
 renderer/sprites/
+
+# build de teste (artefatos locais, nunca publicados)
+dist-teste/
+build/electron-builder-teste.gen.yml

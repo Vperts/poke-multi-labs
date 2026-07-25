@@ -1,5 +1,34 @@
 # Como publicar o Vperts Multi (e como o site pega o download)
 
+## OS DOIS CANAIS — leia antes de qualquer build
+
+| | **OFICIAL** (o que o usuário joga) | **TESTE** (bancada) |
+|---|---|---|
+| config | `electron-builder-lite.yml` | `build/gen-yml-teste.js` (derivada da oficial) |
+| build | `bash build-lite.sh` | `bash build-teste.sh` |
+| sai em | `dist/` | `dist-teste/` |
+| instalador | `VpertsMultiLeve-Setup-<v>.exe` | `VpertsMultiTeste-Setup-<v>.exe` |
+| appId | `com.vperts.multileve` | `com.vperts.multileve.teste` |
+| atalho | Vperts Multi (Leve) | **Vperts Multi (TESTE)** |
+| na tela | barra normal | **barra dourada escrito TESTE** |
+| dados/login | `%APPDATA%\VpertsMultiLite` | `%APPDATA%\VpertsMultiLiteTeste` |
+| porta debug | 9333 | 9433 |
+| auto-update | sim | **desligado no código** (`CANAL_TESTE` em `main-lite.js`) |
+| publicar release | sim | **NUNCA** |
+
+Os dois **instalam lado a lado e rodam ao mesmo tempo** — por isso userData e porta de debug são
+diferentes: no mesmo perfil, duas instâncias brigam pelo cache ("Unable to move the cache") e isso
+já derrubou login de conta. Custo: as contas do jogo precisam ser logadas de novo no app de teste.
+
+O canal é decidido pelo `name` do pacote (`app.getName()`), setado por `extraMetadata.name` só na
+config de teste. Em dev dá pra forçar com `PMLABS_CANAL=teste`.
+
+**Porteiro:** `node build/verifica-release.js` roda automático no fim do `build-lite.sh` e **reprova
+o build** se o canal de update estiver errado, faltar algum dos 4 assets, o `latest.yml` descasar da
+versão, a cópia de nome fixo estiver velha, o exe tiver marca de TESTE ou a tag já existir. Se ele
+reprovar, o comando de release nem é impresso.
+
+
 Fonte oficial a partir da v0.9.4: **`Vperts/poke-multi-labs`**.
 Antes disso as releases saiam de `ekooll/poke-multi-labs` (conta pessoal) — ver "Migracao" no fim.
 

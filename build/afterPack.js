@@ -30,15 +30,19 @@ exports.default = async function afterPack(context) {
 
   const version = context.packager.appInfo.version          // ex: 0.9.4
   const fileVersion = `${version}.0`                        // FileVersion quer 4 campos
+  // canal de teste: as Propriedades do exe tambem precisam dizer TESTE, senao os dois
+  // instaladores ficam identicos no Explorer e da' pra rodar o errado sem perceber.
+  const teste = /teste/i.test(exeName)
+  const produto = teste ? 'Vperts Multi (TESTE)' : 'Vperts Multi'
 
   const args = [
     exe,
     '--set-icon', icon,
     '--set-file-version', fileVersion,
     '--set-product-version', version,
-    '--set-version-string', 'ProductName', 'Vperts Multi',
+    '--set-version-string', 'ProductName', produto,
     // so ASCII aqui: o rcedit v0.2.0 grava acentuado/travessao como "?" nas Propriedades do exe
-    '--set-version-string', 'FileDescription', 'Vperts Multi - painel multi-conta',
+    '--set-version-string', 'FileDescription', produto + ' - painel multi-conta',
     '--set-version-string', 'CompanyName', 'Vperts',
     '--set-version-string', 'LegalCopyright', 'Vperts',
     '--set-version-string', 'OriginalFilename', exeName,

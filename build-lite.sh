@@ -27,6 +27,10 @@ echo ">> copia de nome fixo pro link do site"
 cp -f "$SETUP" "dist/VpertsMultiLeve-Setup.exe"
 
 echo
+# PORTEIRO: confere o ARTEFATO (canal de update, 4 assets, metadados do exe, git, tag livre).
+# Se reprovar, o script para aqui e NAO imprime o comando de release.
+node build/verifica-release.js
+
 echo "OK — versao $VER pronta em dist/:"
 ls -la "$SETUP" "$SETUP.blockmap" dist/latest.yml dist/VpertsMultiLeve-Setup.exe 2>/dev/null || true
 echo
