@@ -11,7 +11,7 @@
     "dist:lite": "bash build-lite.sh"
   },
   "author": "Vperts",
-  "license": "UNLICENSED",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "builder-util-runtime": "9.2.10",
