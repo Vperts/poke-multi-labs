@@ -24,8 +24,10 @@ function evaluate (wsUrl, expression, timeout = 4000) {
     const finish = (v) => { if (!done) { done = true; try { ws && ws.close() } catch {} resolve(v) } }
     try { ws = new WebSocket(wsUrl) } catch { return resolve(null) }
     const timer = setTimeout(() => finish(null), timeout)
+    // awaitPromise: sem isso, expressao `async` volta como {} (a Promise crua serializada) e
+    // parece que o dado nao existe — foi o que aconteceu ao chamar window.ml.checkUpdate().
     ws.on('open', () => ws.send(JSON.stringify({
-      id: 1, method: 'Runtime.evaluate', params: { expression, returnByValue: true }
+      id: 1, method: 'Runtime.evaluate', params: { expression, returnByValue: true, awaitPromise: true }
     })))
     ws.on('message', (data) => {
       try {
