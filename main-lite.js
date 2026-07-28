@@ -13,6 +13,25 @@ const path = require('path');
 const fs = require('fs');
 const cdp = require('./cdp.js');
 process.on('uncaughtException', (e) => console.error('[lite] FATAL', e && e.stack || e));
+
+// ---- PERFIL DE JOGO (precisa vir ANTES do canal: o canal usa JOGO.dados/porta) ----
+// Os dois jogos rodam o MESMO motor (medido 25/07/2026: mesma API `/api/game/*` e
+// `/api/characters/me`, mesmo formato de token {accessToken,refreshToken}, Next.js + canvas), so
+// que com REGRAS diferentes de multi-conta: o Poke Idle World libera 4 contas por IP (comunicado
+// oficial no Discord, 15/07) e o PokeWG libera 2 (confirmado com os devs, 25/07). O limite NAO e'
+// escolha nossa — e' do jogo, e a ferramenta existe pra facilitar o permitido, nao pra burlar.
+// Trocar com a env `PMLABS_JOGO=pokewg`; o padrao continua sendo o Poke Idle World, pra nao mudar
+// nada do app que ja esta publicado.
+// `dados`/`porta`: cada jogo precisa dos SEUS, senao duas instancias abertas juntas brigam pelo
+// mesmo perfil (o erro "Unable to move the cache", que ja derrubou login) e pela porta de debug.
+// O pokeidle mantem os valores ORIGINAIS de proposito: mudar o `dados` dele deslogaria todo mundo
+// que ja usa o app publicado, e mudar a `porta` quebraria o xatu/ler.js.
+const JOGOS = {
+  pokeidle: { chave: 'pokeidle', url: 'https://poke.idleworld.online', max: 4, nome: 'Poke Idle World', dados: 'VpertsMultiLite',   porta: 9333 },
+  pokewg:   { chave: 'pokewg',   url: 'https://pokewg.com',            max: 2, nome: 'Poke Web Games',  dados: 'VpertsMultiLiteWG', porta: 9533 },
+};
+const JOGO = JOGOS[String(process.env.PMLABS_JOGO || '').toLowerCase()] || JOGOS.pokeidle;
+
 // ---- CANAL: "oficial" (o app de jogar) x "teste" (bancada) ----
 // Os dois instalam LADO A LADO e podem estar rodando AO MESMO TEMPO, entao todo recurso
 // EXCLUSIVO do processo precisa diferir, senao um derruba o outro:
@@ -23,24 +42,62 @@ process.on('uncaughtException', (e) => console.error('[lite] FATAL', e && e.stac
 // O canal vem do `name` do pacote (extraMetadata.name no electron-builder-teste.yml). Em dev
 // da pra forcar com PMLABS_CANAL=teste.
 const CANAL_TESTE = /teste/i.test(app.getName()) || /^teste$/i.test(process.env.PMLABS_CANAL || '');
-const APP_LABEL = CANAL_TESTE ? 'Vperts Multi (TESTE)' : 'Vperts Multi';
-// pasta de dados propria (isola cache/login; evita colisao com outros Electron)
-app.setPath('userData', path.join(app.getPath('appData'), CANAL_TESTE ? 'VpertsMultiLiteTeste' : 'VpertsMultiLite'));
+const APP_LABEL = 'Vperts Multi'
+  + (JOGO.chave === 'pokeidle' ? '' : ' — ' + JOGO.nome)
+  + (CANAL_TESTE ? ' (TESTE)' : '');
+// pasta de dados propria (isola cache/login; evita colisao com outros Electron E entre jogos/canais)
+app.setPath('userData', path.join(app.getPath('appData'), JOGO.dados + (CANAL_TESTE ? 'Teste' : '')));
 // PORTA DE DEBUG (so 127.0.0.1). O modo Leve roda o jogo dentro do proprio Electron, entao
 // nao existia porta nenhuma — e o coletor de conferencia (_coleta/coletor.js), que compara o
 // nosso card com o Hunt Analyzer do jogo, ficava logando "app fechado" pra sempre, calado.
 // Mesma porta base do host (9333) pra a ferramenta achar nos dois modos.
-app.commandLine.appendSwitch('remote-debugging-port', CANAL_TESTE ? '9433' : '9333');
+// porta = base do JOGO (+100 no canal de teste): pokeidle 9333/9433 · pokewg 9533/9633
+app.commandLine.appendSwitch('remote-debugging-port', String(JOGO.porta + (CANAL_TESTE ? 100 : 0)));
 app.commandLine.appendSwitch('remote-allow-origins', '*');
 
-const GAME = 'https://poke.idleworld.online';
+const GAME = JOGO.url;
 const LOGIN = GAME + '/login';
+// ---- USER-AGENT: mentir SO' onde o Google exige, nunca pro jogo ----
+// Ate aqui o app declarava "sou Chrome 131" em TUDO, porque o login Google recusa cliente que se
+// apresenta como Electron. So que o jogo passou a proteger o login de e-mail/senha com o Cloudflare
+// Turnstile, e verificacao anti-bot procura exatamente a INCOERENCIA entre o que o navegador diz
+// ser e o que ele e'. Quem entra pelo Google nao sente (aquele fluxo nao passa pelo Turnstile);
+// quem entra por conta e senha fica com o botao "Entrar" DESABILITADO pra sempre, porque o jogo
+// so libera o botao com o token do Turnstile na mao (`TURNSTILE_ENABLED && !token` no codigo dele).
+// MEDIDO no /login do jogo em 27/07/2026, 3 rodadas, janela visivel:
+//   UA "Chrome/131.0.0.0"       -> Turnstile NAO resolve (token vazio)
+//   UA "Chrome/130.0.6723.191"  -> NAO resolve (casar a versao nao basta: o sec-ch-ua entrega o Electron)
+//   UA REAL do Electron         -> RESOLVE (token de 773 chars)
+// Por isso o jogo passa a ver o UA REAL (Turnstile aceita) e so as requisicoes para os hosts do
+// Google levam o UA de Chrome (o OAuth segue aceitando). Nao e' burlar checagem: e' parar de
+// mentir pra quem checa. Pra comparar com o comportamento antigo: PMLABS_UA=chrome.
 const CHROME_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
   '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const UA_SO_GOOGLE = String(process.env.PMLABS_UA || '').toLowerCase() !== 'chrome';
+const HOSTS_GOOGLE = ['*://*.google.com/*', '*://*.googleusercontent.com/*'];
+// Troca o UA por requisicao, so nos hosts do Google. Uma vez por particao: onBeforeSendHeaders
+// aceita UM listener por sessao (registrar de novo substitui o anterior).
+function uaDeChromeSoNoGoogle (ses) {
+  if (!UA_SO_GOOGLE || ses.__vpUaGoogle) return;
+  ses.__vpUaGoogle = true;
+  ses.webRequest.onBeforeSendHeaders({ urls: HOSTS_GOOGLE }, (det, cb) => {
+    det.requestHeaders['User-Agent'] = CHROME_UA;
+    // os client hints entregam "Electron" mesmo com o User-Agent trocado — sem eles o
+    // Google cai no proprio User-Agent, que aqui ja diz Chrome
+    delete det.requestHeaders['sec-ch-ua'];
+    delete det.requestHeaders['sec-ch-ua-full-version-list'];
+    cb({ requestHeaders: det.requestHeaders });
+  });
+}
 const BRIDGE = path.join(__dirname, 'vperts-ext', 'content.js');
-const MAX = 4;                  // regra do jogo: 4/IP
-const START = 4;                // beta gratuito: abre as 4; pode fechar com o ✕
+const MAX = JOGO.max;           // limite do JOGO (Poke Idle 4/IP · PokeWG 2) — nao e' config nossa
+const START = JOGO.max;         // abre o maximo permitido; pode fechar com o ✕
+// Sessao de cada conta. O pokeidle mantem o nome ANTIGO da particao (`persist:vperts-contaN`):
+// renomear deslogaria todas as contas de quem ja usa o app publicado. Jogo novo ganha prefixo.
+const PARTICAO = (num) => JOGO.chave === 'pokeidle'
+  ? `persist:vperts-conta${num}`
+  : `persist:vperts-${JOGO.chave}-conta${num}`;
 
 const B = 2;                    // borda vermelha (px)
 const TITLE_H = 32;
@@ -136,19 +193,28 @@ ipcMain.on('vperts:token-set', (e, tok) => {
 });
 
 function openAccount (num) {
-  const partition = `persist:vperts-conta${num}`;
-  session.fromPartition(partition).setUserAgent(CHROME_UA);
+  const partition = PARTICAO(num);
+  const ses = session.fromPartition(partition);
+  if (!UA_SO_GOOGLE) ses.setUserAgent(CHROME_UA);   // comportamento antigo (PMLABS_UA=chrome)
+  uaDeChromeSoNoGoogle(ses);
   const view = new WebContentsView({
     webPreferences: { partition, preload: BRIDGE, contextIsolation: false, backgroundThrottling: false },
   });
   const wc = view.webContents;
   const slot = { num, view, connected: false };
-  wc.setUserAgent(CHROME_UA);
+  if (!UA_SO_GOOGLE) wc.setUserAgent(CHROME_UA);
   wc.setAudioMuted(true);        // 4 jogos tocando som = peso inutil -> muta tudo
   attachShortcuts(wc);           // Ctrl+1..4 / Ctrl+0 mesmo com o jogo em foco
   // clicou na tela = ela vira a "principal" e recebe o orcamento de fps cheio
   wc.on('focus', () => { if (focusNum !== num) { focusNum = num; layout(); } });
   wc.setWindowOpenHandler(({ url }) => ({ action: 'allow', overrideBrowserWindowOptions: { width: 520, height: 680 } }));
+  // popup do "Continuar com Google": ali dentro o navigator.userAgent tambem precisa dizer Chrome
+  // (a troca por cabecalho cobre a requisicao; isto cobre o que o JS da pagina le)
+  wc.on('did-create-window', (child, det) => {
+    try {
+      if (UA_SO_GOOGLE && /(^|\.)google\.com$/.test(new URL(det.url).hostname)) child.webContents.setUserAgent(CHROME_UA);
+    } catch (e) {}
+  });
   wc.on('dom-ready', () => { slot._tk = null; layout(); applyFps(wc); });
   const onNav = (_e, url) => { slot.connected = /\/play|\/game/.test(url) && !/\/login|\/register/.test(url); emitState(); };
   wc.on('did-navigate', onNav);
@@ -475,7 +541,7 @@ ipcMain.handle('recarregar-conta', (_e, i) => {
 ipcMain.handle('trocar-conta', async (_e, i) => {
   const s = slots[i]; if (!s) return { ok: false };
   delete sessions[s.num]; saveSessions();
-  try { await session.fromPartition('persist:vperts-conta' + s.num).clearStorageData(); } catch (e) {}
+  try { await session.fromPartition(PARTICAO(s.num)).clearStorageData(); } catch (e) {}
   try { await s.view.webContents.loadURL(LOGIN); } catch (e) {}
   emitState();
   return { ok: true };
