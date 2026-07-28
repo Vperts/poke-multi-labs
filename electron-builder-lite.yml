@@ -28,11 +28,11 @@ files:
   - renderer/alerta.html
   - renderer/curtain.html
   - renderer/logo-vp.png
-  # brasao do VPLaunch (sidebar) e simbolo do Poke Idle World (barra de cima). Sem estas linhas
+  # brasao do VPLaunch (sidebar) e logo do Poke Idle World (barra de cima). Sem estas linhas
   # os arquivos nao entram no asar e as duas imagens quebram SO' no empacotado — no dev elas
   # carregam do disco e o erro nao aparece.
   - renderer/logo-vplaunch.png
-  - renderer/simbolo-piw.png
+  - renderer/logo-piw.png
   - renderer/logo-vp.ico
   # o icone da JANELA (taskbar) e' lido em runtime pelo main-lite.js — se nao entrar aqui,
   # o caminho nao existe dentro do asar e a barra de tarefas volta pro atomo do Electron
