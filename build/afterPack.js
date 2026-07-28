@@ -20,7 +20,9 @@ exports.default = async function afterPack(context) {
   if (context.electronPlatformName !== 'win32') return
 
   const rcedit = path.join(__dirname, 'rcedit-x64.exe')
-  const icon = path.join(__dirname, '..', 'renderer', 'logo-vp.ico')
+  // MESMO icone declarado em electron-builder-lite.yml (win.icon). Se os dois divergirem, o
+  // atalho fica com um icone e o exe com outro.
+  const icon = path.join(__dirname, '..', 'renderer', 'logo-piw.ico')
   const exeName = `${context.packager.appInfo.productFilename}.exe`
   const exe = path.join(context.appOutDir, exeName)
 

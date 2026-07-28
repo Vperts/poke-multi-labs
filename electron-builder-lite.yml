@@ -12,7 +12,7 @@ directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.9.7
+  version: 0.9.8
 files:
   - main-lite.js
   - lite-titlebar-preload.js
@@ -58,7 +58,11 @@ files:
   - node_modules/sax/**/*
 win:
   target: nsis
-  icon: renderer/logo-vp.ico            # icone do app/exe + dos atalhos (logo Vperts, 256x256)
+  # Icone do exe/instalador/atalhos. Cada app usa o logo do SEU jogo (aqui, Poke Idle World) —
+  # com o logo Vperts nos dois, nao dava pra distinguir os apps na barra de tarefas. O .ico traz
+  # 16/24/32/48/64/128/256; nos tamanhos pequenos o logo escrito fica miudo (limitacao de logo
+  # com texto), o que pesa menos que ter dois icones identicos.
+  icon: renderer/logo-piw.ico
   # MANTER false: por true, o electron-builder tenta extrair o winCodeSign (que tem symlinks de
   # macOS .dylib) e FALHA aqui sem Modo de Desenvolvedor/admin ("nao tem o privilegio necessario"),
   # e o build nem sai. O icone e os metadados do exe entram pelo afterPack abaixo, que chama o
