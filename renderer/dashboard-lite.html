@@ -53,90 +53,164 @@
 
   /* ---------- corpo: nav + painel ---------- */
   .det{display:flex;height:calc(100% - 45px - 44px);min-height:0}
-  .nav{width:166px;flex:none;border-right:1px solid var(--line);background:rgba(13,8,7,.72);
-    padding:12px 9px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+  /* ---------- sidebar: a mesma casca do VPLaunch (renderer/index.html do launcher) ----------
+     E' o cabecalho fixo do site virado de lado. O desfoque e' o que faz ela FLUTUAR sobre a
+     textura em vez de virar um bloco chapado — aqui e' seguro (a cicatriz do cintilar era o
+     card por cima do canvas do jogo; esta janela tem fundo estatico). */
+  .nav{width:248px;flex:none;border-right:1px solid var(--line);
+    background:rgba(10,6,5,.93);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:14px 0 34px rgba(0,0,0,.45);position:relative;z-index:40;
+    padding:8px 0 12px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+  /* janela apertada (minWidth 460): a sidebar cede espaco em vez de espremer o painel */
+  @media (max-width:720px){ .nav{width:190px} }
   .nav::-webkit-scrollbar{width:6px}.nav::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:3px}
-  .navh{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
-    color:var(--gold-soft);padding:4px 8px 7px}
-  .navb{display:flex;align-items:center;gap:9px;width:100%;background:transparent;
-    border:1px solid transparent;color:var(--muted);padding:9px 10px;border-radius:11px;
-    cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:700;text-align:left;
-    transition:.16s var(--ease);min-width:0}
-  .navb:hover{color:var(--cream);background:rgba(255,255,255,.05)}
-  .navb.on{color:var(--gold);border-color:var(--line-strong);
-    background:linear-gradient(90deg,rgba(229,179,79,.14),rgba(229,179,79,.02))}
-  .navb i{width:7px;height:7px;border-radius:50%;flex:none;background:var(--good)}
-  .navb i.warn{background:var(--mid)} .navb i.down{background:var(--bad)}
+  .navh{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--gold-soft);padding:18px 16px 7px;opacity:.85}
+  .navh:first-child{padding-top:10px}
+  /* mesmo comportamento das abas do site (.main-tab), girado 90 graus: a barrinha nasce no
+     centro da borda esquerda e cresce pra cima e pra baixo */
+  .navb{position:relative;display:flex;align-items:center;gap:11px;width:calc(100% - 16px);
+    margin:0 8px;background:transparent;border:1px solid transparent;color:#c9b8ae;
+    padding:10px 12px;border-radius:10px;cursor:pointer;font-family:inherit;font-size:13px;
+    font-weight:700;letter-spacing:.02em;text-align:left;min-width:0;
+    transition:color .2s,background .2s,border-color .2s}
+  .navb::after{content:"";position:absolute;left:3px;top:50%;bottom:50%;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--red-2),var(--gold));
+    transition:top .25s var(--ease),bottom .25s var(--ease)}
+  .navb:hover,.navb.on{color:#fff;background:rgba(194,54,41,.1)}
+  .navb:hover::after,.navb.on::after{top:9px;bottom:9px}
   .navb span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .navb img{width:22px;height:22px;flex:none;object-fit:contain;image-rendering:pixelated;
-    filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
-  .navsep{height:1px;background:var(--line);margin:8px 6px}
+  /* A CAIXA MANDA (docs/UI_ICONES.md): sprite de pokemon e icone de linha enchem a MESMA
+     caixa de 22px e leem como o mesmo tamanho. */
+  .navb svg,.navb img{width:22px;height:22px;flex:0 0 22px}
+  /* moldura do app = icone GENERICO de linha (regra da casca do launcher) */
+  .navb svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;
+    stroke-linejoin:round;opacity:.8;transition:opacity .2s,transform .2s,filter .2s}
+  .navb:hover svg{opacity:1;transform:translateY(-1px)}
+  .navb.on svg{opacity:1;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--gold) 34%,transparent))}
+  /* o sprite do lider IDENTIFICA a conta — aqui ele e' conteudo, nao enfeite de navegacao.
+     Preto e branco -> cor e' o ESTADO (os mesmos filtros do .tab-game-icon do site). */
+  .navb img{object-fit:contain;image-rendering:pixelated;opacity:.82;
+    filter:grayscale(.72) sepia(.28) saturate(.72) brightness(.82) drop-shadow(0 1px 3px rgba(0,0,0,.6));
+    transition:filter .25s var(--ease),opacity .25s var(--ease),transform .25s var(--ease)}
+  .navb:hover img,.navb.on img{opacity:1;transform:translateY(-2px);
+    filter:grayscale(.3) sepia(.2) saturate(.9) brightness(.98) drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+  /* status virou selo a direita: a caixa de 22px agora e' do sprite, e ponto colorido no
+     lugar do icone escondia QUAL conta e' */
+  .navb i{width:6px;height:6px;border-radius:50%;flex:none;background:var(--good);
+    box-shadow:0 0 6px currentColor}
+  .navb i.warn{background:var(--mid)} .navb i.down{background:var(--bad)}
+  .navb i.ok{display:none}
+  .navsep{height:1px;background:var(--line);margin:10px 16px 2px}
 
   .pane{flex:1;min-width:0;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:11px}
   .pane::-webkit-scrollbar{width:7px}.pane::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:4px}
 
   /* ---------- cabecalho do painel (com a arte do pokemon) ---------- */
-  .hero{position:relative;overflow:hidden;border:1px solid var(--line-strong);border-radius:16px;
+  /* mesma caixa do card do VPLaunch: gradiente 160deg, borda #3b2118, raio 18. A profundidade
+     vem de PRETO + borda, nunca de sombra colorida. O radial rubi continua por baixo (e' o que
+     acende a arte do pokemon), por isso as camadas seguem com alpha. */
+  .hero{position:relative;overflow:hidden;border:1px solid #3b2118;border-radius:18px;
     padding:14px 16px;min-height:92px;display:flex;align-items:center;
-    background:linear-gradient(100deg,rgba(38,23,18,.96),rgba(13,8,7,.86) 62%),
+    transition:border-color .22s var(--ease),box-shadow .22s var(--ease);
+    background:linear-gradient(160deg,rgba(23,13,10,.96),rgba(8,6,5,.9) 62%),
       radial-gradient(120% 160% at 100% 50%,rgba(194,54,41,.22),transparent 62%)}
+  .hero:hover{border-color:var(--line-strong);box-shadow:0 16px 34px #0009}
   .hero .art{position:absolute;right:10px;top:50%;transform:translateY(-50%);height:118%;
     opacity:.92;image-rendering:pixelated;pointer-events:none;
     -webkit-mask-image:linear-gradient(90deg,transparent,#000 42%);
     filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
   .hero .glow{position:absolute;right:26px;top:50%;width:132px;height:132px;transform:translateY(-50%);
     border-radius:50%;background:radial-gradient(circle,rgba(229,179,79,.2),transparent 68%);pointer-events:none}
+  /* lider shiny: o halo acende em dourado cheio — mesma cor da marca, so' mais forte */
+  .hero .glow.sh{background:radial-gradient(circle,rgba(229,179,79,.42),rgba(217,131,80,.12) 46%,transparent 70%)}
   .hero .hinfo{position:relative;z-index:2;min-width:0;flex:1}
   .hero h2{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:22px;color:var(--cream);
     margin:0;letter-spacing:.04em;line-height:1.15;text-shadow:0 2px 12px rgba(0,0,0,.7)}
   .hero p{margin:5px 0 0;font-size:11.5px;color:var(--muted)}
-  .hero .hb{position:relative;z-index:2;flex:none;font-size:10px;font-weight:800;padding:5px 11px;
-    border-radius:99px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-  .b-ok{color:#0c1a10;background:var(--good)} .b-warn{color:#1a1405;background:var(--mid)} .b-down{color:#fff;background:var(--red-2)}
+  /* selo do launcher: pill VAZADO com borda na cor. Bloco de cor macico so' na acao que muda
+     o estado do mundo — um badge de status nao e' isso. */
+  .hero .hb{display:inline-flex;align-items:center;margin-top:10px;font-size:9px;font-weight:800;padding:5px 10px;
+    border-radius:99px;border:1px solid;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+  /* base escura POR BAIXO da camada de cor: o selo fica em cima da arte do pokemon, e so' com
+     o alpha da cor o sprite atravessava o badge e comia o texto */
+  .b-ok{color:var(--good);border-color:rgba(79,196,122,.45);
+    background:linear-gradient(rgba(79,196,122,.13),rgba(79,196,122,.13)),rgba(9,5,5,.84)}
+  .b-warn{color:var(--mid);border-color:rgba(224,169,60,.45);
+    background:linear-gradient(rgba(224,169,60,.13),rgba(224,169,60,.13)),rgba(9,5,5,.84)}
+  .b-down{color:var(--bad);border-color:rgba(255,107,85,.45);
+    background:linear-gradient(rgba(255,107,85,.14),rgba(255,107,85,.14)),rgba(9,5,5,.84)}
   /* lixeira do dashboard: discreta, ao lado do badge; acende no hover (destrutiva, nao chama atencao a toa) */
-  .hero .zerar{position:relative;z-index:2;flex:none;margin-left:8px;width:30px;height:30px;
-    background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:9px;color:var(--faint);
+  .hero .zerar{position:absolute;z-index:3;top:12px;right:12px;width:30px;height:30px;
+    background:rgba(9,5,5,.7);border:1px solid var(--line);border-radius:10px;color:var(--faint);
     font-size:14px;cursor:pointer;transition:color .16s var(--ease),border-color .16s var(--ease),background .16s var(--ease)}
   .hero .zerar:hover{color:#fff;border-color:var(--red-2);background:rgba(194,54,41,.18)}
   .hero .zerar:disabled{opacity:.4;cursor:default}
 
   /* ---------- cards (Modelo 1) ---------- */
-  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:9px}
-  .tile{position:relative;overflow:hidden;background:linear-gradient(160deg,rgba(30,18,16,.9),rgba(11,7,6,.92));
-    border:1px solid var(--line);border-radius:14px;padding:12px 13px;min-width:0;
-    display:flex;flex-direction:column;transition:border-color .18s var(--ease),transform .18s var(--ease)}
-  .tile::before{content:"";position:absolute;inset:0 0 auto;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(229,179,79,.35),transparent)}
-  .tile:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:11px}
+  /* card do VPLaunch: cada tile carrega --jogo (o --clan do site) e e' essa cor que acende a
+     borda e o halo no hover — a linha dourada fixa no topo saiu, ela era do estilo antigo. */
+  .tile{--jogo:var(--gold);position:relative;overflow:hidden;
+    background:linear-gradient(160deg,#170d0a,#080605);
+    border:1px solid #3b2118;border-radius:18px;padding:13px 14px;min-width:0;
+    display:flex;flex-direction:column;
+    transition:transform .22s var(--ease),border-color .22s var(--ease),box-shadow .22s var(--ease)}
+  .tile:hover{transform:translateY(-3px);border-color:var(--jogo);
+    box-shadow:0 0 0 1px color-mix(in srgb,var(--jogo) 32%,transparent),0 16px 34px #0009}
   .tile .th{display:flex;align-items:center;gap:9px;margin-bottom:10px;min-height:34px}
-  .tile .ic{width:33px;height:33px;flex:none;border-radius:10px;display:grid;place-items:center;
-    font-size:14px;font-weight:800;line-height:1;border:1px solid currentColor;
-    background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.09),transparent 70%)}
+  /* moldura VAZADA na cor (nunca preenchida): so' a acao principal ganha bloco de cor */
+  .tile .ic{width:33px;height:33px;flex:none;border-radius:11px;display:grid;place-items:center;
+    font-size:14px;font-weight:800;line-height:1;
+    border:1px solid color-mix(in srgb,currentColor 42%,transparent);
+    background:color-mix(in srgb,currentColor 7%,transparent)}
   .tile .ic img{width:22px;height:22px;object-fit:contain;image-rendering:pixelated}
   .tile .ic svg{width:16px;height:16px;fill:currentColor}
-  .tile .tk{font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--muted);line-height:1.25;min-width:0;
+  .tile .tk{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);line-height:1.3;min-width:0;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .tile .tv{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:20px;line-height:1;
+    font-variant-numeric:tabular-nums;
     color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .tile .ts{font-size:9.5px;color:var(--faint);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .t-gold .ic{color:var(--gold)}  .t-gold .tv{color:var(--gold)}
-  .t-good .ic{color:var(--good)}  .t-good .tv{color:var(--good)}
-  .t-xp .ic{color:var(--xp)}  .t-ball .ic{color:var(--ball)}  .t-mut .ic{color:var(--faint)}
-  .tile.zero .tv{color:var(--bad)}
+  /* tile de bolas: ocupa 2 colunas pra caber "nome + quantidade" de cada tipo sem apertar.
+     Em janela estreita o grid vira 1 coluna e o span teria que inventar uma coluna implicita. */
+  .tile.larga{grid-column:span 2}
+  @media (max-width:720px){ .tile.larga{grid-column:auto} }
+  .blist{display:flex;flex-direction:column;gap:5px}
+  .bl{display:flex;align-items:center;gap:9px;min-width:0}
+  .bl img{width:21px;height:21px;flex:none;object-fit:contain;image-rendering:pixelated}
+  .bl img.idle{width:18px;height:18px}
+  .bl .bph{width:21px;height:21px;flex:none;border-radius:6px;background:#170d0b;border:1px solid var(--line)}
+  .bl .bn{flex:1;min-width:0;font-size:11.5px;font-weight:700;color:var(--muted);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bl .bn em{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ball)}
+  .bl .bq{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:17px;line-height:1;
+    font-variant-numeric:tabular-nums;color:var(--cream);white-space:nowrap}
+  .bl.uso .bn{color:var(--cream)} .bl.uso .bq{color:var(--ball)}
+  .t-gold{--jogo:var(--gold)}  .t-gold .ic{color:var(--gold)}  .t-gold .tv{color:var(--gold)}
+  .t-good{--jogo:var(--good)}  .t-good .ic{color:var(--good)}  .t-good .tv{color:var(--good)}
+  .t-xp{--jogo:var(--xp)}      .t-xp .ic{color:var(--xp)}
+  .t-ball{--jogo:var(--ball)}  .t-ball .ic{color:var(--ball)}
+  .t-mut{--jogo:var(--line-strong)} .t-mut .ic{color:var(--faint)}
+  .tile.zero{--jogo:var(--bad)} .tile.zero .tv{color:var(--bad)}
 
   /* ---------- secoes ---------- */
-  .box{border:1px solid var(--line);border-radius:15px;padding:12px 14px 13px;
-    background:linear-gradient(160deg,rgba(30,18,16,.62),rgba(11,7,6,.7))}
+  .box{border:1px solid #3b2118;border-radius:18px;padding:13px 15px 14px;
+    background:linear-gradient(160deg,rgba(23,13,10,.72),rgba(8,6,5,.82))}
   .bh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
-  .bt{font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--gold-soft)}
+  /* kicker da marca: caixa alta com letter-spacing largo, em gold-soft */
+  .bt{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft)}
   .bv{font-size:10.5px;color:var(--muted);font-weight:700}
   .bv.est{color:var(--faint);font-weight:600;font-style:italic}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:9px}
-  .st{background:rgba(11,7,6,.7);border:1px solid var(--line);border-radius:12px;padding:10px 11px;min-width:0}
+  .st{background:linear-gradient(160deg,#170d0a,#080605);border:1px solid #3b2118;border-radius:14px;
+    padding:11px 12px;min-width:0;transition:border-color .22s var(--ease)}
+  .st:hover{border-color:var(--line-strong)}
   .st .sv{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:19px;line-height:1.1;color:var(--cream);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .st .sl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:3px}
+    font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .st .sl{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:4px}
   .st .sd{font-size:9.5px;color:var(--faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .stg{color:var(--gold)} .stc{color:#8d8d9c}
   .linhas{display:flex;flex-direction:column;gap:5px}
@@ -144,17 +218,17 @@
   .ll{color:var(--muted);font-weight:600} .ll em{font-style:normal;color:var(--faint);font-size:10.5px}
   .lv{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
   .lin.pos .lv{color:var(--good)} .lin.neg .lv{color:var(--bad)}
-  .tot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;padding:10px 12px;
-    border-radius:12px;background:linear-gradient(90deg,rgba(79,196,122,.12),rgba(79,196,122,.03));
+  .tot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:11px;padding:11px 13px;
+    border-radius:14px;background:linear-gradient(90deg,rgba(79,196,122,.12),rgba(79,196,122,.03));
     border:1px solid rgba(79,196,122,.3)}
-  .tot span{font-size:10.5px;color:var(--muted);font-weight:700}
+  .tot span{font-size:9.5px;color:var(--muted);font-weight:800;letter-spacing:.12em;text-transform:uppercase}
   .tot b{font-family:'Cinzel',serif;font-size:19px;font-weight:800;white-space:nowrap}
   .tot b.pos{color:var(--good)} .tot b.neg{color:var(--bad)}
   .ph2{display:flex;align-items:center;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--faint)}
   .ph2 b{color:var(--gold);font-weight:800;font-variant-numeric:tabular-nums}
-  .prog{background:rgba(11,7,6,.7);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .prog{background:linear-gradient(160deg,#170d0a,#080605);border:1px solid #3b2118;border-radius:18px;padding:13px 15px}
   .prog .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
-  .prog .pt{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft)}
+  .prog .pt{font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft)}
   .prog .pv{font-size:11px;color:var(--muted);font-weight:700}
   .track{height:10px;border-radius:6px;background:#170d0b;border:1px solid var(--line);overflow:hidden}
   .fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3ae07c,#1fb959);transition:width .4s var(--ease)}
@@ -658,17 +732,28 @@
     ultimas = rows
     if(sel!=='todas' && sel!=='alertas' && !rows.some(r=>String(r.num)===String(sel))) sel='todas'
     // navegação
+    // icone de linha na moldura do app (nunca sprite): 22px, traco 1.8, herda currentColor
+    const IC_TODAS = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/>'+
+      '<rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/>'+
+      '<rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>'
+    const IC_ALERTA = '<svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>'+
+      '<path d="M13.7 21a2 2 0 01-3.4 0"/></svg>'
+    const IC_CONTA = '<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>'+
+      '<circle cx="12" cy="7" r="4"/></svg>'
+    const selo = (cls) => '<i class="'+(cls||'ok')+'"></i>'
     $('#nav').innerHTML = '<div class="navh">Painel</div>'+
-      '<button class="navb'+(sel==='todas'?' on':'')+'" data-sel="todas"><i class="'+
-        (rows.some(r=>alertOf(r.state).cls==='down')?'down':(rows.some(r=>alertOf(r.state).cls==='warn')?'warn':''))+
-        '"></i><span>Todas</span></button>'+
+      '<button class="navb'+(sel==='todas'?' on':'')+'" data-sel="todas">'+IC_TODAS+
+        '<span>Todas</span>'+
+        selo(rows.some(r=>alertOf(r.state).cls==='down')?'down':(rows.some(r=>alertOf(r.state).cls==='warn')?'warn':''))+
+        '</button>'+
       '<div class="navsep"></div><div class="navh">Contas</div>'+
       rows.map(r=>{ const a=alertOf(r.state), dex=r.state&&r.state.lider&&r.state.lider.speciesId
         return '<button class="navb'+(String(r.num)===String(sel)?' on':'')+'" data-sel="'+r.num+'">'+
-          (dex?'<img src="'+spritePng(dex)+'" alt="">':'<i class="'+a.cls+'"></i>')+
-          '<span>'+esc(nameOf(r.num))+'</span></button>' }).join('')+
+          (dex?'<img src="'+spritePng(dex)+'" alt="">':IC_CONTA)+
+          '<span>'+esc(nameOf(r.num))+'</span>'+selo(a.cls)+'</button>' }).join('')+
       '<div class="navsep"></div><div class="navh">Config</div>'+
-      '<button class="navb'+(sel==='alertas'?' on':'')+'" data-sel="alertas"><i></i><span>⚙ Alertas</span></button>'
+      '<button class="navb'+(sel==='alertas'?' on':'')+'" data-sel="alertas">'+IC_ALERTA+
+        '<span>Alertas</span></button>'
     $('#nav').querySelectorAll('.navb').forEach(b=>b.onclick=()=>{
       sel=b.dataset.sel; localStorage.setItem('pml_sel',sel); render(ultimas) })
 
@@ -687,8 +772,8 @@
       }
     } else if(sel==='todas'){
       $('#pane').innerHTML = '<div class="hero"><div class="hinfo"><h2>Todas as contas</h2>'+
-        '<p>o essencial somado — abra uma conta na lista pra ver os detalhes</p></div>'+
-        '<span class="hb b-ok">'+rows.length+(rows.length===1?' conta':' contas')+'</span></div>' + painelTodas(rows)
+        '<p>o essencial somado — abra uma conta na lista pra ver os detalhes</p>'+
+        '<span class="hb b-ok">'+rows.length+(rows.length===1?' conta':' contas')+'</span></div></div>' + painelTodas(rows)
     } else {
       const r = rows.find(x=>String(x.num)===String(sel))
       const st = r.state, a = alertOf(st), lid = st&&st.lider
@@ -702,8 +787,9 @@
         '<div class="hero">'+(dex?'<span class="glow"></span><img class="art" src="'+spriteAnim(dex)+
           '" onerror="this.onerror=null;this.src=\''+spritePng(dex)+'\'" alt="">':'')+
         '<div class="hinfo"><h2>'+esc(nameOf(r.num))+'</h2>'+
-        '<p>'+(sub.length?esc(sub.join('  ·  ')):'acompanhe o progresso na hunt')+'</p></div>'+
-        '<span class="hb '+a.badge+'">'+a.txt+'</span>'+
+        // o selo fica junto do texto: no canto direito ele caia EM CIMA da arte do lider
+        '<p>'+(sub.length?esc(sub.join('  ·  ')):'acompanhe o progresso na hunt')+'</p>'+
+        '<span class="hb '+a.badge+'">'+a.txt+'</span></div>'+
         // lixeira propria do dashboard: zera a sessao DESTA conta (mesmo `cardReset`/__vpReset
         // que a lixeira do card). O painel do jogo nao zera junto — ver a ancora no analyzer.
         '<button class="zerar" id="zerar" data-num="'+r.num+'" title="Zerar as estatísticas desta conta (o mesmo que o jogo faz ao trocar de hunt)">🗑</button>'+
