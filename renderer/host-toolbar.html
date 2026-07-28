@@ -24,30 +24,51 @@
     transition:width .16s var(--ease)}
   /* ---- header / logo ---- */
   .head{display:flex;align-items:center;gap:10px;padding:13px 12px;border-bottom:1px solid var(--line)}
-  .logo{width:40px;height:40px;border-radius:10px;flex:none;box-shadow:0 4px 14px rgba(0,0,0,.5),0 0 0 1px var(--line-strong)}
+  /* brasao do VPLaunch: arte com alpha de verdade, entao nada de moldura quadrada nem anel —
+     a profundidade vem do drop-shadow, como no .side-topo do launcher */
+  .logo{width:58px;height:auto;flex:none;object-fit:contain;margin:-6px 0;
+    filter:drop-shadow(0 6px 16px rgba(0,0,0,.6))}
   .lockup{flex:1;min-width:0}
   .word{font-family:Cinzel,serif;font-weight:900;font-size:16px;line-height:1;
     background:linear-gradient(180deg,#ff6a4d,#b32418);-webkit-background-clip:text;background-clip:text;
     color:transparent;white-space:nowrap}
+  /* nome do jogo pode ocupar 2 linhas — o .word e' nowrap e o small HERDA isso, por isso o
+     white-space:normal explicito aqui */
   .word small{display:block;font-family:Inter,sans-serif;-webkit-text-fill-color:var(--faint);color:var(--faint);
-    font-size:9px;font-weight:700;letter-spacing:.18em;margin-top:3px}
+    font-size:8.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;
+    white-space:normal;line-height:1.4}
+  /* sem moldura: com o resto da sidebar sem bordas, ela era a unica caixa desenhada na tela
+     e virava o elemento mais chamativo do topo. So' o icone, com realce no hover. */
   .toggle{flex:none;width:26px;height:26px;padding:0;display:flex;align-items:center;justify-content:center;
-    background:var(--surface-2);color:var(--gold-soft);border:1px solid var(--line);border-radius:8px;
-    cursor:pointer;font-size:12px;transition:.14s}
-  .toggle:hover{border-color:var(--line-strong);color:var(--gold)}
+    background:transparent;color:var(--faint);border:0;border-radius:8px;
+    cursor:pointer;font-size:12px;transition:color .16s var(--ease),background .16s var(--ease)}
+  .toggle:hover{color:var(--cream);background:rgba(255,255,255,.07)}
+  .toggle svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
   /* ---- body ---- */
   .body{flex:1;min-height:0;overflow:auto;padding:14px 12px;display:flex;flex-direction:column;gap:18px}
   .grp{display:flex;flex-direction:column;gap:8px}
-  .lbl{color:var(--gold-soft);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+  .lbl{color:var(--gold-soft);font-size:9.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
   .rowbtns{display:flex;gap:6px}
-  .rowbtns.col{flex-direction:column}
+  .rowbtns.col{flex-direction:column;gap:2px}
   button{font-family:Inter,sans-serif}
-  .b{background:var(--surface-2);color:var(--cream);border:1px solid var(--line);border-radius:11px;
-    padding:9px 0;font-weight:600;font-size:13px;cursor:pointer;transition:.14s var(--ease);flex:1}
-  .b:hover{border-color:var(--line-strong);color:var(--gold);transform:translateY(-1px)}
-  .b:active{transform:translateY(0)}
-  .b.on{color:var(--gold);border-color:var(--gold);
-    background:linear-gradient(180deg,#3a2016,#26130d);box-shadow:inset 0 1px 0 rgba(229,179,79,.15)}
+  /* item de navegacao do launcher: a barrinha nasce no centro da borda esquerda e cresce pra
+     cima e pra baixo (o .main-tab do site girado 90 graus). Nada de bloco de cor no
+     selecionado — dourado macico fica reservado pra acao que muda o estado do mundo. */
+  .b{position:relative;display:flex;align-items:center;gap:11px;background:transparent;
+    color:#c9b8ae;border:1px solid transparent;border-radius:10px;
+    padding:10px 12px;font-weight:700;font-size:12.5px;line-height:1.3;letter-spacing:.02em;text-align:left;
+    cursor:pointer;transition:color .2s,background .2s,border-color .2s;flex:1}
+  .b::after{content:"";position:absolute;left:3px;top:50%;bottom:50%;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--red-2),var(--gold));
+    transition:top .25s var(--ease),bottom .25s var(--ease)}
+  .b:hover,.b.on{color:#fff;background:rgba(194,54,41,.1)}
+  .b:hover::after,.b.on::after{top:9px;bottom:9px}
+  /* a caixa manda: todo icone da moldura enche a MESMA caixa de 22px, traco 1.8 (docs/UI_ICONES.md) */
+  .b svg{width:22px;height:22px;flex:0 0 22px;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.8;transition:opacity .2s,transform .2s,filter .2s}
+  .b:hover svg{opacity:1;transform:translateY(-1px)}
+  .b.on svg{opacity:1;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--gold) 34%,transparent))}
   .b.locked{opacity:.45}
   .up{color:var(--gold-soft);cursor:pointer;text-decoration:underline}
   .up:hover{color:var(--gold)}
@@ -55,19 +76,36 @@
   .fline b{color:var(--gold-soft)}
   .col .b{text-align:left;padding:10px 12px}
   /* ---- contas (estilo idle-labs) ---- */
-  .accts{display:flex;flex-direction:column;gap:7px}
-  .arow{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);
-    border-radius:11px;padding:2px 4px 2px 10px;transition:.14s var(--ease)}
-  .arow:hover{border-color:var(--line-strong)}
-  .arow.on{border-color:var(--red);background:linear-gradient(180deg,#3a1712,#26100c);
-    box-shadow:inset 0 0 0 1px rgba(195,54,41,.35)}
-  .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
-  .dot.up{background:var(--good)}
-  .arow.on .dot.up{background:var(--red-2);animation:pulse 2s infinite}
+  .accts{display:flex;flex-direction:column;gap:2px}
+  /* conta = item de navegacao, mesma receita do .b — mas com borda VISIVEL de proposito:
+     e' ela que pisca no alerta de bola/potion acabando (.arow.alerta). Sem borda em repouso
+     o alerta teria que inventar uma, e a conta pularia de tamanho quando disparasse. */
+  .arow{position:relative;display:flex;align-items:center;gap:9px;background:transparent;
+    border:1px solid var(--line);border-radius:10px;padding:0 4px 0 12px;
+    transition:color .2s,background .2s,border-color .2s}
+  .arow::after{content:"";position:absolute;left:3px;top:50%;bottom:50%;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--red-2),var(--gold));
+    transition:top .25s var(--ease),bottom .25s var(--ease)}
+  .arow:hover{background:rgba(194,54,41,.1);border-color:var(--line-strong)}
+  .arow.on{background:rgba(194,54,41,.1);border-color:rgba(226,75,53,.45)}
+  .arow:hover::after,.arow.on::after{top:9px;bottom:9px}
+  .aname svg{width:22px;height:22px;flex:0 0 22px;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+  .arow:hover .aname svg,.arow.on .aname svg{opacity:1}
+  /* o ponto de status vira SELO a direita do nome — no lugar do icone ele escondia QUAL conta e' */
+  .dot{order:2;width:6px;height:6px;border-radius:50%;background:var(--faint);flex:none;
+    box-shadow:0 0 6px currentColor}
+  .dot.up{background:var(--good);color:var(--good)}
+  .arow.on .dot.up{background:var(--red-2);color:var(--red-2);animation:pulse 2s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(226,75,53,.5)}70%{box-shadow:0 0 0 7px rgba(226,75,53,0)}100%{box-shadow:0 0 0 0 rgba(226,75,53,0)}}
-  .aname{flex:1;background:transparent;border:0;color:var(--cream);font-weight:600;font-size:13px;
-    text-align:left;cursor:pointer;padding:8px 0}
-  .arow:hover .aname{color:var(--gold)}
+  .aname{flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:transparent;border:0;
+    color:#c9b8ae;font-weight:700;font-size:13px;letter-spacing:.02em;
+    text-align:left;cursor:pointer;padding:10px 0;transition:color .2s}
+  /* conta sem icone alinha o nome com quem TEM (o "Todas"): 22 da caixa + 11 do gap.
+     DEPOIS do shorthand `padding` — declarado antes, ele apagava este padding-left. */
+  .aname{padding-left:33px}
+  .aname:has(svg){padding-left:0}
+  .arow:hover .aname,.arow.on .aname{color:#fff}
   /* ALERTA VISUAL: conta com estoque acabando pisca + aviso (toast) */
   @keyframes alertapulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,53,0)}50%{box-shadow:0 0 0 3px rgba(226,75,53,.6)}}
   .arow.alerta{animation:alertapulse 1s ease-in-out infinite;border-color:var(--red)!important}
@@ -110,10 +148,16 @@
   .loothint{color:var(--faint);font-size:10px;line-height:1.4;margin-top:3px}
   /* ---- utilitarios (atualizar / atalho) ---- */
   .util{display:flex;gap:6px;margin-top:9px}
-  .util .u{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
-    border-radius:9px;padding:7px 0;font-size:11px;font-weight:600;cursor:pointer;transition:.14s;font-family:Inter,sans-serif}
-  .util .u:hover{border-color:var(--line-strong);color:var(--gold)}
+  .util .u{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    background:rgba(229,179,79,.06);border:1px solid var(--line-strong);color:var(--gold);
+    border-radius:11px;padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;
+    font-family:Inter,sans-serif;transition:transform .18s var(--ease),background .18s}
+  .util .u:hover{background:rgba(229,179,79,.13);transform:translateY(-2px)}
+  .util .u svg{width:14px;height:14px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
   .util .u.hot{border-color:var(--gold);color:var(--gold)}
+  .util .u.hot svg{animation:gira 1s linear infinite}
+  @keyframes gira{to{transform:rotate(360deg)}}
   /* ---- perfil pra sorteio ---- */
   .perfilbox{display:none;flex-direction:column;gap:7px;margin-top:9px}
   .perfilbox.show{display:flex}
@@ -130,15 +174,24 @@
     color:var(--cream);padding:6px 8px;font-size:13px;font-weight:600;font-family:Inter,sans-serif;outline:none}
   /* ---- rail (contas no modo recolhido) ---- */
   .rail{display:none}
-  .rbtn{position:relative;width:36px;height:36px;border-radius:10px;background:var(--surface-2);
-    color:var(--cream);border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;transition:.14s var(--ease)}
-  .rbtn:hover{border-color:var(--line-strong);color:var(--gold);transform:translateY(-1px)}
-  .rbtn.on{color:var(--gold);border-color:var(--gold);background:linear-gradient(180deg,#3a2016,#26130d)}
+  /* recolhido segue o mesmo idioma do aberto: borda discreta em repouso (e' ela que pisca no
+     alerta), rubi 10% no selecionado — sem bloco dourado macico */
+  .rbtn{position:relative;width:36px;height:36px;border-radius:10px;background:transparent;
+    color:#c9b8ae;border:1px solid var(--line);font-weight:700;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:color .2s,background .2s,border-color .2s,transform .18s var(--ease)}
+  .rbtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+  .rbtn:hover{border-color:var(--line-strong);color:#fff;background:rgba(194,54,41,.1);transform:translateY(-2px)}
+  .rbtn:hover svg{opacity:1}
+  .rbtn.on{color:#fff;border-color:rgba(226,75,53,.45);background:rgba(194,54,41,.1)}
+  .rbtn.on svg{opacity:1;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--gold) 34%,transparent))}
   .rbtn .rdot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;
     background:var(--faint);border:1.5px solid var(--surface)}
   .rbtn .rdot.up{background:var(--good)}
-  .radd{border-style:dashed;border-color:var(--line-strong);color:var(--gold-soft);font-size:16px}
+  .radd{border-style:dashed;border-color:var(--line-strong);color:var(--gold);font-size:16px;
+    background:rgba(229,179,79,.06)}
+  .radd:hover{color:var(--gold);border-color:var(--gold);background:rgba(229,179,79,.13)}
   .rloot{color:var(--good);border-color:rgba(79,196,122,.5);font-size:16px;font-weight:800}
   .rloot:hover{color:var(--good);border-color:var(--good);background:linear-gradient(180deg,#123021,#0d1f16)}
   /* ---- recolhido ---- */
@@ -151,20 +204,22 @@
 <body>
   <div class="side">
     <div class="head">
-      <img class="logo" src="logo-vp.png" alt="VP" />
+      <img class="logo" src="logo-vplaunch.png" alt="VP" />
       <div class="lockup">
-        <div class="word">VPERTS<small>multi-conta</small></div>
+        <!-- o subtitulo nomeia o JOGO selecionado, nao a sigla do app -->
+        <div class="word">VPERTS<small>Poke Idle World</small></div>
       </div>
-      <button class="toggle" id="toggle" title="Recolher">◀</button>
+      <button class="toggle" id="toggle" title="Recolher"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     </div>
 
     <div class="body">
       <div class="grp">
         <span class="lbl">Layout</span>
+        <!-- icone GENERICO de linha na moldura do app (a arte do jogo fica dentro do jogo) -->
         <div class="rowbtns col" id="seg-mode">
-          <button class="b" data-m="grid">▦ Grade</button>
-          <button class="b" data-m="rows">▤ Horizontal</button>
-          <button class="b" data-m="columns">▥ Vertical</button>
+          <button class="b" data-m="grid"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>Grade</button>
+          <button class="b" data-m="rows"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.6"/><rect x="3" y="13" width="18" height="7" rx="1.6"/></svg>Horizontal</button>
+          <button class="b" data-m="columns"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="7" height="18" rx="1.6"/><rect x="13" y="3" width="7" height="18" rx="1.6"/></svg>Vertical</button>
         </div>
       </div>
 
@@ -175,18 +230,18 @@
 
       <div class="grp">
         <span class="lbl">Painel</span>
-        <button class="b" id="dash-btn" style="flex:none">📊 Dashboard das contas</button>
+        <button class="b" id="dash-btn" style="flex:none"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>Dashboard das contas</button>
       </div>
 
       <div class="grp">
         <span class="lbl">Perfil pra sorteio</span>
-        <button class="b" id="perfil-btn" style="flex:none">👤 Meus dados</button>
+        <button class="b" id="perfil-btn" style="flex:none"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Meus dados</button>
         <div class="perfilbox" id="perfilbox"></div>
-        <button class="b" id="admin-btn" style="flex:none;display:none">⬇ Baixar participantes (CSV)</button>
+        <button class="b" id="admin-btn" style="flex:none;display:none"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Baixar participantes (CSV)</button>
       </div>
 
       <div class="util">
-        <button class="u" id="btn-update" title="Buscar atualização" style="flex:1">↻ Buscar atualização</button>
+        <button class="u" id="btn-update" title="Buscar atualização" style="flex:1"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 11-2.34-5.66"/><path d="M20 4v4h-4"/></svg>Buscar atualização</button>
       </div>
     </div>
 
@@ -272,7 +327,9 @@
     const all = document.createElement('div')
     all.className = 'arow' + (s.solo === -1 ? ' on' : '')
     all.innerHTML = '<span class="dot' + (s.embedded > 0 ? ' up' : '') + '"></span>' +
-      '<button class="aname">▦ Todas</button>'
+      '<button class="aname"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/>' +
+      '<rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/>' +
+      '<rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>Todas</button>'
     all.querySelector('.aname').onclick = () => window.ml.setSolo(-1)
     box.appendChild(all)
     // cada conta
@@ -304,10 +361,16 @@
     const rail = $('#rail'); if (!rail) return; rail.innerHTML = ''
     // loot (balao com cifrao) — abre a janela de soma
     const dash = document.createElement('button')
-    dash.className = 'rbtn'; dash.textContent = '📊'; dash.title = 'Dashboard das contas'
+    // recolhido usa os MESMOS icones de linha da sidebar aberta (nada de emoji na moldura)
+    const IC_DASH = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/>'
+      + '<path d="M8 16v-4M12 16V8M16 16v-6"/></svg>'
+    const IC_GRID = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/>'
+      + '<rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/>'
+      + '<rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>'
+    dash.className = 'rbtn'; dash.innerHTML = IC_DASH; dash.title = 'Dashboard das contas'
     dash.onclick = () => window.ml.openDashboard(); rail.appendChild(dash)
     const all = document.createElement('button')
-    all.className = 'rbtn' + (s.solo === -1 ? ' on' : ''); all.textContent = '▦'; all.title = 'Todas'
+    all.className = 'rbtn' + (s.solo === -1 ? ' on' : ''); all.innerHTML = IC_GRID; all.title = 'Todas'
     all.onclick = () => window.ml.setSolo(-1); rail.appendChild(all)
     ;(s.slots || []).forEach(sl => {
       const b = document.createElement('button')
@@ -357,7 +420,9 @@
   $('#toggle').onclick = () => {
     collapsed = !collapsed
     document.body.classList.toggle('collapsed', collapsed)
-    $('#toggle').textContent = collapsed ? '▶' : '◀'
+    // innerHTML, nao textContent: o chevron e' SVG (textContent apagaria o icone)
+    $('#toggle').innerHTML = '<svg viewBox="0 0 24 24"><path d="' +
+      (collapsed ? 'M9 5l7 7-7 7' : 'M15 5l-7 7 7 7') + '"/></svg>'
     window.ml.setSidebar(collapsed)
   }
   document.querySelectorAll('#seg-n button').forEach(b =>

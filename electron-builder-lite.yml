@@ -28,6 +28,9 @@ files:
   - renderer/alerta.html
   - renderer/curtain.html
   - renderer/logo-vp.png
+  # brasao do VPLaunch no topo da sidebar (casca unificada da familia, 28/07/2026). Sem esta
+  # linha o arquivo nao entra no asar e o cabecalho abre com imagem quebrada SO' no empacotado.
+  - renderer/logo-vplaunch.png
   - renderer/logo-vp.ico
   # o icone da JANELA (taskbar) e' lido em runtime pelo main-lite.js — se nao entrar aqui,
   # o caminho nao existe dentro do asar e a barra de tarefas volta pro atomo do Electron
