@@ -77,8 +77,11 @@ nsis:
   oneClick: true                        # duplo-clique instala e ja abre, sem telas
   perMachine: false                     # instala pro usuario (sem prompt de admin)
   allowToChangeInstallationDirectory: false
-  createDesktopShortcut: true           # atalho na Area de Trabalho, com o icone
-  createStartMenuShortcut: true         # e no Menu Iniciar
+  # 28/07/2026: quem fica na Area de Trabalho e' SO' o VPLaunch. Com 2 jogos, o desktop
+  # juntava um icone por app fazendo a mesma coisa — abrir um jogo. O app continua no Menu
+  # Iniciar (pra quem procura pelo nome) e quem abre ele no dia a dia e' o launcher.
+  createDesktopShortcut: false
+  createStartMenuShortcut: true         # continua no Menu Iniciar
   shortcutName: Vperts Multi (Leve)     # nome IGUAL ao atalho do dono (ver /print 24/07)
   artifactName: VpertsMultiLeve-Setup-${version}.exe
 # publish = canal do AUTO-UPDATE. Gera o latest.yml e embute o app-update.yml (owner/repo) que o
