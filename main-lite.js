@@ -76,6 +76,25 @@ const CHROME_UA =
   '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const UA_SO_GOOGLE = String(process.env.PMLABS_UA || '').toLowerCase() !== 'chrome';
 const HOSTS_GOOGLE = ['*://*.google.com/*', '*://*.googleusercontent.com/*'];
+// CLIENT HINTS COERENTES (28/07/2026) — nao basta APAGAR os sec-ch-ua.
+// A versao anterior deletava os cabecalhos achando que, sem eles, o Google cairia no User-Agent
+// (que ja diz Chrome). Nao cai: Chrome de verdade SEMPRE manda esses cabecalhos, entao a AUSENCIA
+// deles e' por si so' o sinal de que o cliente nao e' Chrome — e o OAuth voltava
+// "Esse navegador ou app pode nao ser seguro". MEDIDO nesta maquina, particao limpa:
+//   deletando os hints          -> "Nao foi possivel fazer o login"
+//   PMLABS_UA=chrome (tudo UA)  -> tela de login do Google carrega e entra
+// Ninguem tinha pego antes porque no PC antigo as contas ja estavam logadas nas particoes
+// persistentes: o OAuth nao era refeito desde a mudanca da 0.9.7.
+// Aqui a gente forja o conjunto INTEIRO, coerente com o CHROME_UA acima. A UA reduction do Chrome
+// zera minor/build/patch no User-Agent (131.0.0.0) e manda a versao cheia na full-version-list —
+// por isso os dois numeros diferem de proposito.
+const CH_HINTS = {
+  'sec-ch-ua': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+  'sec-ch-ua-full-version-list':
+    '"Google Chrome";v="131.0.6778.86", "Chromium";v="131.0.6778.86", "Not_A Brand";v="24.0.0.0"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"Windows"',
+};
 // Troca o UA por requisicao, so nos hosts do Google. Uma vez por particao: onBeforeSendHeaders
 // aceita UM listener por sessao (registrar de novo substitui o anterior).
 function uaDeChromeSoNoGoogle (ses) {
@@ -83,10 +102,13 @@ function uaDeChromeSoNoGoogle (ses) {
   ses.__vpUaGoogle = true;
   ses.webRequest.onBeforeSendHeaders({ urls: HOSTS_GOOGLE }, (det, cb) => {
     det.requestHeaders['User-Agent'] = CHROME_UA;
-    // os client hints entregam "Electron" mesmo com o User-Agent trocado — sem eles o
-    // Google cai no proprio User-Agent, que aqui ja diz Chrome
-    delete det.requestHeaders['sec-ch-ua'];
-    delete det.requestHeaders['sec-ch-ua-full-version-list'];
+    // o Electron manda os hints com a marca "Electron"; sobrescrever (nao apagar) e' o que
+    // mantem a historia coerente do lado do Google. Case-insensitive: o Chromium pode
+    // emitir a chave com outra caixa, e ai sobrariam DOIS cabecalhos brigando.
+    for (const k of Object.keys(det.requestHeaders)) {
+      if (/^sec-ch-ua/i.test(k)) delete det.requestHeaders[k];
+    }
+    Object.assign(det.requestHeaders, CH_HINTS);
     cb({ requestHeaders: det.requestHeaders });
   });
 }
