@@ -451,8 +451,10 @@ app.whenReady().then(() => {
     frame: false, backgroundColor: BORDER_COLOR, title: APP_LABEL,
     // sem isto a janela (frameless) aparecia com o icone generico do Electron (atomo) na barra
     // de tarefas, mesmo com o exe/atalho ja usando o logo Vperts. O icone da JANELA e' o que o
-    // Windows mostra na taskbar em runtime — tem que ser setado explicitamente aqui.
-    icon: path.join(__dirname, 'renderer', 'logo-vp.ico') });
+    // Windows mostra na taskbar em runtime — tem que ser setado explicitamente aqui, e e'
+    // INDEPENDENTE do icone do exe (win.icon do electron-builder + afterPack). Trocar so' o do
+    // exe deixa o atalho certo e a taskbar errada — foi exatamente o que aconteceu em 27/07.
+    icon: path.join(__dirname, 'renderer', 'logo-piw.ico') });
   buildChrome();
   for (let k = 0; k < START; k++) openAccount(nextFreeNum());
   layout();

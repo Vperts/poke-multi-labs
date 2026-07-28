@@ -29,6 +29,9 @@ files:
   - renderer/curtain.html
   - renderer/logo-vp.png
   - renderer/logo-vp.ico
+  # o icone da JANELA (taskbar) e' lido em runtime pelo main-lite.js — se nao entrar aqui,
+  # o caminho nao existe dentro do asar e a barra de tarefas volta pro atomo do Electron
+  - renderer/logo-piw.ico
   - renderer/assets/**/*
   # OBRIGATORIO: as 6 telas usam ./fonts/fonts.css (Inter/Cinzel locais). Sem esta linha
   # o portable sai com a fonte do sistema e o visual quebra - e so no exe, nao no dev.
