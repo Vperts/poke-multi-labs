@@ -6,72 +6,91 @@
 <link rel="stylesheet" href="./fonts/fonts.css"><!-- fontes locais: sem rede, sem flash -->
 <style>
   :root{ --gold:#e5b34f; --gold-soft:#d98350; --cream:#f7eee7;
-    --muted:#b5a196; --faint:#7d6d64; --red-2:#e24b35; --good:#4fc47a;
-    --line:rgba(216,138,74,.18); }
+    --muted:#b5a196; --faint:#7d6d64; --red-2:#e24b35; --red-deep:#8e1d19; --good:#4fc47a;
+    --line:rgba(216,138,74,.18); --ease:cubic-bezier(.22,.7,.2,1); }
   *{box-sizing:border-box}
+  /* titlebar do VPLaunch: --red-deep chapado, sem gradiente */
   html,body{margin:0;height:100%;overflow:hidden;color:var(--cream);font-family:Inter,system-ui,sans-serif;font-size:12px;
-    background:linear-gradient(90deg,#160c0a,#241110 50%,#160c0a);
-    border-bottom:1px solid rgba(226,75,53,.22)}
+    background:var(--red-deep)}
   .tb{display:flex;align-items:center;height:100%;-webkit-app-region:drag}
-  .brand{padding-left:11px;font-family:'Cinzel',Georgia,serif;font-weight:800;color:var(--gold);font-size:12.5px;letter-spacing:.02em;-webkit-app-region:drag}
-  .eco{margin-left:10px;-webkit-app-region:no-drag;background:transparent;border:1px solid rgba(79,196,122,.4);
-    color:var(--good);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit}
-  .eco.off{border-color:var(--line);color:var(--faint)}
-  .eco:hover{filter:brightness(1.1)}
-  .fps{margin-left:6px;-webkit-app-region:no-drag;background:transparent;border:1px solid rgba(79,196,122,.4);
-    color:var(--good);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit}
-  .fps.off{border-color:var(--line);color:var(--faint)}
-  .fps:hover{filter:brightness(1.1)}
-  .stats{margin-left:6px;-webkit-app-region:no-drag;background:transparent;border:1px solid rgba(229,179,79,.45);
-    color:var(--gold);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit}
-  .stats.off{border-color:var(--line);color:var(--faint)}
-  .stats:hover{filter:brightness(1.1)}
+  /* a arte do JOGO no lugar do nome do app: ela diz de qual jogo e' esta janela melhor que o texto */
+  .brand{display:flex;align-items:center;gap:8px;padding-left:10px;-webkit-app-region:drag}
+  .brand img{height:26px;width:auto;display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))}
+  .teste{font-family:'Cinzel',Georgia,serif;font-weight:800;font-size:10px;letter-spacing:.16em;
+    color:#1a0b07;background:var(--gold);border-radius:5px;padding:2px 7px}
+  .eco,.fps,.stats{margin-left:6px;-webkit-app-region:no-drag;display:inline-flex;align-items:center;gap:6px;
+    background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.16);
+    color:#f4dcc9;border-radius:9px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;
+    font-family:inherit;transition:background .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease)}
+  .eco{margin-left:12px}
+  .eco svg,.fps svg,.stats svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;
+    stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  /* ON verde, OFF cinza — IGUAL nos quatro. Cor diferente por botao faria o dourado parecer
+     um terceiro estado em vez de "ligado"; o estado tem que ler de relance. */
+  .eco:not(.off),.fps:not(.off),.stats:not(.off){
+    color:var(--good);border-color:rgba(79,196,122,.5);background:rgba(79,196,122,.14)}
+  .eco.off,.fps.off,.stats.off{color:rgba(255,255,255,.55);border-color:rgba(255,255,255,.14);background:rgba(0,0,0,.2)}
+  .eco:hover,.fps:hover,.stats:hover{filter:brightness(1.12)}
   .spacer{flex:1}
+  /* botoes de janela do launcher: 44px, SVG 11px, fechar em vermelho vivo */
   .ctrls{display:flex;align-items:center;height:100%;-webkit-app-region:no-drag}
-  .ctrls button{background:transparent;border:0;color:var(--muted);width:44px;height:100%;font-size:13px;cursor:pointer;font-family:inherit}
-  .ctrls button:hover{color:var(--cream);background:rgba(255,255,255,.08)}
-  #close:hover{color:#fff;background:var(--red-2)}
+  .ctrls button{background:transparent;border:0;color:#f0cfae;width:44px;height:100%;cursor:pointer;
+    display:grid;place-items:center;transition:background .15s var(--ease)}
+  .ctrls button:hover{background:rgba(0,0,0,.28)}
+  .ctrls svg{width:11px;height:11px;stroke:currentColor;stroke-width:1.6;fill:none}
+  #close:hover{background:#d13c2c;color:#fff}
 </style>
 </head>
 <body>
   <div class="tb">
-    <span class="brand" id="brand">Vperts Multi</span>
+    <span class="brand" id="brand"><img src="logo-pokeidle.png" alt="Poke Idle World"></span>
     <script>
       // canal de TESTE (?teste=1, vindo do main): marca a barra pra nao confundir com o app
       // oficial, que pode estar aberto ao lado.
       if (/[?&]teste=1/.test(location.search)) {
         var b = document.getElementById('brand');
-        b.textContent = 'Vperts Multi · TESTE';
-        b.style.color = '#e5b34f';
+        b.insertAdjacentHTML('beforeend', '<span class="teste">TESTE</span>');
         document.body.style.borderTop = '2px solid #e5b34f';
       }
     </script>
-    <button class="eco" id="eco" title="Economiza CPU: 30fps na tela em que voce esta mexendo, 15fps nas outras (OFF = 60/30)">🔋 Eco: ON</button>
-    <button class="fps off" id="fps" title="Mostrar FPS no canto de cada tela">📈 FPS: OFF</button>
-    <button class="stats off" id="stats" title="Modo estatísticas: jogos ao fundo (1fps) + stats na tela toda">📊 Stats: OFF</button>
-    <button class="stats" id="ovl" title="Card de cada conta flutuando sobre a tela dela (a área do card não recebe clique do jogo)">🃏 Cards: ON</button>
+    <button class="eco" id="eco" title="Economiza CPU: 30fps na tela em que voce esta mexendo, 15fps nas outras (OFF = 60/30)"></button>
+    <button class="fps off" id="fps" title="Mostrar FPS no canto de cada tela"></button>
+    <button class="stats off" id="stats" title="Modo estatísticas: jogos ao fundo (1fps) + stats na tela toda"></button>
+    <button class="stats" id="ovl" title="Card de cada conta flutuando sobre a tela dela (a área do card não recebe clique do jogo)"></button>
     <div class="spacer"></div>
     <div class="ctrls">
-      <button id="min" title="Minimizar">—</button>
-      <button id="max" title="Maximizar">▢</button>
-      <button id="close" title="Fechar">✕</button>
+      <button id="min" title="Minimizar"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+      <button id="max" title="Maximizar"><svg viewBox="0 0 12 12"><rect x="2.2" y="2.2" width="7.6" height="7.6" rx="1"/></svg></button>
+      <button id="close" title="Fechar"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
     </div>
   </div>
 <script>
+  // icone de linha na moldura (nunca emoji). Como o rotulo vira innerHTML, o SVG entra junto:
+  // textContent apagaria o icone a cada toggle.
+  const IC = {
+    eco:  '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="10" rx="2.5"/><path d="M20 10.5v3"/><path d="M9.5 9.5L7 12.5h3l-2.5 3"/></svg>',
+    fps:  '<svg viewBox="0 0 24 24"><path d="M3 20V4"/><path d="M3 20h18"/><path d="M6.5 16l4-5 3.5 3 4.5-6"/></svg>',
+    stats:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>',
+    ovl:  '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="12" height="13" rx="2.2"/><path d="M8 4h11a2 2 0 012 2v11"/></svg>',
+  }
+  const rotulo = (el, ico, nome, on) => {
+    el.classList.toggle('off', !on)
+    el.innerHTML = IC[ico] + '<span>' + nome + ': ' + (on ? 'ON' : 'OFF') + '</span>'
+  }
   const eco = document.getElementById('eco');
-  const paint = (on) => { eco.classList.toggle('off', !on); eco.textContent = on ? '🔋 Eco: ON' : '🔋 Eco: OFF'; };
+  const paint = (on) => rotulo(eco, 'eco', 'Eco', on);
   eco.onclick = async () => paint(await window.win.toggleEco());
   window.win.getEco().then(paint);
   const fps = document.getElementById('fps');
-  const paintFps = (on) => { fps.classList.toggle('off', !on); fps.textContent = on ? '📈 FPS: ON' : '📈 FPS: OFF'; };
+  const paintFps = (on) => rotulo(fps, 'fps', 'FPS', on);
   fps.onclick = async () => paintFps(await window.win.toggleFps());
   window.win.getFps().then(paintFps);
   const stats = document.getElementById('stats');
-  const paintStats = (on) => { stats.classList.toggle('off', !on); stats.textContent = on ? '📊 Stats: ON' : '📊 Stats: OFF'; };
+  const paintStats = (on) => rotulo(stats, 'stats', 'Stats', on);
   stats.onclick = async () => paintStats(await window.win.toggleStats());
   window.win.getStats().then(paintStats);
   const ovl = document.getElementById('ovl');
-  const paintOvl = (on) => { ovl.classList.toggle('off', !on); ovl.textContent = on ? '🃏 Cards: ON' : '🃏 Cards: OFF'; };
+  const paintOvl = (on) => rotulo(ovl, 'ovl', 'Cards', on);
   ovl.onclick = async () => paintOvl(await window.win.toggleOverlay());
   window.win.getOverlay().then(paintOvl);
   document.getElementById('min').onclick = () => window.win.minimize();
