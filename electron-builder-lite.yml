@@ -12,7 +12,7 @@ directories:
   output: dist
 extraMetadata:
   main: main-lite.js
-  version: 0.9.10
+  version: 0.9.11
 files:
   - main-lite.js
   - lite-titlebar-preload.js
